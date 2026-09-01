@@ -29,8 +29,9 @@ test('chunkText: an oversized single paragraph is hard-split', () => {
 });
 
 test('chunkText: Cyrillic (Ukrainian) text chunks losslessly', () => {
-  const para =
-    'Я працював над масштабуванням інференсу великих мовних моделей у Києві. '.repeat(20);
+  const para = 'Я працював над масштабуванням інференсу великих мовних моделей у Києві. '.repeat(
+    20,
+  );
   const text = Array(5).fill(para.trim()).join('\n\n');
   const chunks = chunkText(text, 900, 150);
   assert.ok(chunks.length > 1);
