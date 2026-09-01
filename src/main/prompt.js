@@ -1,6 +1,7 @@
 'use strict';
 
-// 纯函数：构造作答 / 问题提取的提示词。无 Electron 依赖，便于单测。
+// Pure functions that build the answering / question-extraction prompts.
+// No Electron dependency, so this module is directly unit-testable.
 
 function buildPrompt({
   question,
@@ -11,6 +12,9 @@ function buildPrompt({
   profile,
   jobDescription,
 }) {
+  // The per-language rule is deliberately written in its own target
+  // language — it primes the model's output language far better than an
+  // English description of it would.
   const langRule =
     answerLanguage === 'zh'
       ? '请用中文作答。'
@@ -18,70 +22,76 @@ function buildPrompt({
         ? 'Answer in English.'
         : answerLanguage === 'uk'
           ? 'Відповідай українською мовою.'
-          : '使用与问题相同的语言作答。';
+          : 'Answer in the same language the question was asked in.';
 
   const lines = [
-    '你是正在参加面试的候选人本人。下面会给出面试现场的对话片段 / 问题，以及可能相关的个人资料/知识库内容。',
-    '请用第一人称、专业且自然的口吻，像在面试现场【口头作答】一样直接回答问题。',
-    '要求：',
-    `1) 严格控制在 ${maxChars} 字符以内（硬性上限），目标约 300 字、宁可更短。【大纲式，不要整段散文】：第一行一句话给结论/判断；随后 2-3 个以“- ”开头的精炼要点（关键词、工具、数字、取舍），能用词组就别用整句。`,
-    '2) 纯文本输出，禁止使用 Markdown 加粗/星号(**)、井号(#)、表格等标记（界面不渲染 Markdown，会显示成乱码）；删掉所有铺垫和客套；',
-    '3) 直接开口作答，不要复述问题、不要写“我的回答”之类的标题、不要出现“根据资料/上文”之类措辞；',
-    '4) 若资料中有相关信息务必优先采用并保持事实准确，资料无关则用你的专业知识作答；',
-    '5) 给到的对话是实时语音识别结果，可能有重复、串音、口误、错别字——请自行容错，判断面试官【当前最可能在问的核心问题】，只回答这个问题；',
-    `6) ${langRule}`,
+    'You are the PhD candidate defending your own dissertation before an examination committee.',
+    "You will be given a committee member's question, a recent transcript of the session, and excerpts from your own dissertation materials.",
+    'Answer in the first person, as if speaking aloud to the committee, in an academic but natural spoken register.',
+    'Rules:',
+    `1) Write FLOWING PROSE — continuous sentences that read as speech. NEVER use bullet points, dashes as list markers, numbered lists, headings or any outline structure. Aim for about 3-8 sentences; ${maxChars} characters is a hard upper bound, not a target.`,
+    '2) Open with the direct answer to the question. No preamble, no "good question", no restating or summarising the question, no title such as "My answer".',
+    '3) The dissertation excerpts are the primary and authoritative source of facts about this work. Reproduce numerical values, formulas, algorithm names, constraints, experimental conditions and stated conclusions EXACTLY as they appear in the excerpts — never paraphrase, round or approximate them.',
+    '4) If the excerpts do not cover part of the question, you may add general knowledge from the subject area, but say explicitly that it is general background and not a result of this dissertation.',
+    '5) NEVER invent dissertation-specific facts, numbers, method names, citations or references that are not present in the excerpts.',
+    '6) If the excerpts contradict each other (different values for the same fact), state that discrepancy openly instead of silently picking one.',
+    '7) If no excerpt is relevant to the question, give a short, careful answer from general knowledge and state plainly that it is not confirmed by the dissertation materials.',
+    '8) Plain text only. No Markdown: no asterisks (**), no hash headings, no tables — the interface does not render Markdown and would show the raw characters.',
+    "9) The transcript is live speech recognition and may contain repetitions, cross-talk, misrecognised words and unfinished sentences. Tolerate that noise and answer only the committee's CURRENT core question.",
+    '10) Never reveal your reasoning — output only the final answer.',
+    `11) ${langRule}`,
   ];
   if (jobDescription && jobDescription.trim()) {
     lines.push(
       '',
-      '================ 目标岗位 JD（请据此定制回答：对齐岗位要求、技术栈与关键词，突出匹配点）================',
+      '================ ADDITIONAL TARGET CONTEXT (tailor the answer to it: align with its requirements, terminology and keywords) ================',
       jobDescription.trim().slice(0, 6000),
     );
   }
   if (profile && profile.trim()) {
     lines.push(
       '',
-      '================ 本次面试背景与作答风格（最高优先级，务必遵循） ================',
+      '================ SESSION BACKGROUND AND ANSWERING STYLE (HIGHEST PRIORITY — follow it) ================',
       profile.trim(),
     );
   }
   const systemInstruction = lines.join('\n');
 
   const parts = [];
-  if (context) parts.push(`【可参考的个人资料 / 知识库】\n${context}\n`);
+  if (context) parts.push(`[DISSERTATION MATERIALS / KNOWLEDGE BASE EXCERPTS]\n${context}\n`);
 
   const q = (question || '').trim();
   if (q) {
     if (transcript) {
       parts.push(
-        `【最近约15轮面试对话历史（语音识别，可能有重复/错误，仅供你理解上下文、保持连贯）】\n${transcript}\n`,
+        `[RECENT SESSION TRANSCRIPT (~15 turns, speech recognition — may contain repeats or errors; use it only for context and continuity)]\n${transcript}\n`,
       );
     }
-    parts.push(`【需要回答的问题】\n${q}`);
-    parts.push('请结合上面的对话上下文直接作答。');
-    parts.push('\n请直接给出你的回答：');
+    parts.push(`[QUESTION TO ANSWER]\n${q}`);
+    parts.push('Answer it directly, using the material above.');
+    parts.push('\nYour answer:');
   } else {
     parts.push(
-      `【最近约15轮面试对话历史（语音识别，可能有重复/串音/口误）】\n${transcript || '(暂无对话)'}\n`,
+      `[RECENT SESSION TRANSCRIPT (~15 turns, speech recognition — may contain repeats, cross-talk or errors)]\n${transcript || '(no dialogue yet)'}\n`,
     );
     parts.push(
-      '请在心里判断面试官【最新/当前】正在问的核心问题，然后【直接作答】；较早的轮次只作为背景上下文，用来让回答更贴合、连贯，不要去回答更早的旧问题。',
+      'Work out silently which question the committee is asking RIGHT NOW, then answer it directly. Earlier turns are background context only — do not answer an older question that was already addressed.',
     );
     parts.push(
-      '严禁任何前缀或复述，例如不得出现“The core question is…”“面试官在问…”“你的问题是…”，第一句话就是你的回答本身。',
+      'Do not output any prefix or restatement — no "The core question is…", no "The committee is asking…", no "Your question is…". The first sentence must already be the answer itself.',
     );
-    parts.push('\n你的回答：');
+    parts.push('\nYour answer:');
   }
 
   return { systemInstruction, userText: parts.join('\n') };
 }
 
-// 问题提取（只看最近几轮）
+// Question extraction (looks only at the most recent turns).
 const EXTRACTION_SYSTEM =
-  "You clean up noisy live interview transcripts. The transcript may contain repeats, cross-talk, ASR errors and half-sentences. Identify the interviewer's CURRENT core question and rewrite it as ONE clean, complete question. Output ONLY that question — no prefix, no quotes, no explanation. Write it in the SAME language the interviewer is speaking.";
+  'You clean up noisy live transcripts of a dissertation defense. The transcript may contain repeats, cross-talk, speech-recognition errors and half-sentences. Identify the CURRENT core question a committee member is putting to the candidate and rewrite it as ONE clean, complete question. Drop introductory remarks, compliments and asides, but keep every meaningful part of a long multi-sentence question. If the latest turn is a short follow-up to an earlier question, return that follow-up rather than the earlier question. Preserve academic and technical terminology exactly as spoken. Output ONLY that question — no prefix, no quotes, no explanation. Write it in the SAME language the committee member is speaking.';
 
 function buildExtractionUser(recentTranscript) {
-  return `Recent turns:\n${recentTranscript}\n\nThe interviewer's current core question is:`;
+  return `Recent turns:\n${recentTranscript}\n\nThe committee member's current core question is:`;
 }
 
 module.exports = { buildPrompt, EXTRACTION_SYSTEM, buildExtractionUser };

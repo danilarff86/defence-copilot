@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
 
+// Bump when a stored settings value needs a one-time migration; see migrate().
+const SETTINGS_VERSION = 2;
+
 const DEFAULTS = {
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
   // 答案 Provider： deepseek / gemini / openai / ollama
@@ -25,24 +28,41 @@ const DEFAULTS = {
   hotkey: 'Control+A',
   // 自动作答：监测到面试官问完一个问题就自动触发（无需按热键）
   autoAnswer: false,
-  // 答案字数上限
-  maxChars: 500,
+  // 答案字数上限（作为硬性上限，不是目标长度；学术散文需要更大预算）
+  maxChars: 1200,
   // 答案语言： auto（跟随问题） / zh / en
   answerLanguage: 'auto',
   // 面试背景与作答风格（注入到系统提示，最高优先级）
   interviewProfile: '',
   // 目标岗位 JD（持久化；上传或粘贴，作答时据此定制）
   jobDescription: '',
+  // 设置结构版本，供 migrate() 做一次性迁移
+  schemaVersion: SETTINGS_VERSION,
 };
 
 function settingsPath() {
   return path.join(app.getPath('userData'), 'settings.json');
 }
 
+// One-time upgrades of a settings file written by an older version.
+// Takes the raw parsed file (before merging DEFAULTS, so a missing
+// schemaVersion still reads as v1) and returns a new object.
+function migrate(saved) {
+  const from = typeof saved.schemaVersion === 'number' ? saved.schemaVersion : 1;
+  if (from >= SETTINGS_VERSION) return saved;
+  const out = { ...saved };
+  // v1 → v2: answers were outline-style and capped at 500 characters.
+  // Academic prose needs a larger budget, so lift the old default. A value
+  // the user chose themselves is left alone.
+  if (from < 2 && out.maxChars === 500) out.maxChars = DEFAULTS.maxChars;
+  out.schemaVersion = SETTINGS_VERSION;
+  return out;
+}
+
 function load() {
   try {
     const raw = fs.readFileSync(settingsPath(), 'utf8');
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    return { ...DEFAULTS, ...migrate(JSON.parse(raw)) };
   } catch (_e) {
     return { ...DEFAULTS };
   }
@@ -58,4 +78,4 @@ function save(partial) {
   return merged;
 }
 
-module.exports = { load, save, DEFAULTS, settingsPath };
+module.exports = { load, save, migrate, DEFAULTS, SETTINGS_VERSION, settingsPath };
