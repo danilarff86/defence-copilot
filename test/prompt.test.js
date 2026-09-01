@@ -112,9 +112,23 @@ test('buildPrompt: job description is still injected as tailoring context', () =
   assert.match(systemInstruction, /adaptive control/);
 });
 
-test('extraction prompt helpers', () => {
+test('extraction prompt targets the committee question and keeps its contract', () => {
+  // Domain: a defense, not a job interview.
+  assert.match(EXTRACTION_SYSTEM, /dissertation defense/);
+  assert.match(EXTRACTION_SYSTEM, /committee member/);
+  assert.doesNotMatch(EXTRACTION_SYSTEM, /interview/i);
+  // Spec US3 behaviours.
+  assert.match(EXTRACTION_SYSTEM, /Drop introductory remarks/);
+  assert.match(EXTRACTION_SYSTEM, /multi-sentence question/);
+  assert.match(EXTRACTION_SYSTEM, /follow-up/);
+  assert.match(EXTRACTION_SYSTEM, /terminology/);
+  // Unchanged output contract.
   assert.match(EXTRACTION_SYSTEM, /ONLY that question/);
-  assert.match(buildExtractionUser('Interviewer: hi'), /Interviewer: hi/);
+  assert.match(EXTRACTION_SYSTEM, /SAME language/);
+});
+
+test('buildExtractionUser embeds the transcript and the trailing cue', () => {
+  assert.match(buildExtractionUser('Committee: hi'), /Committee: hi/);
   assert.match(buildExtractionUser('x'), /current core question is:/);
 });
 
