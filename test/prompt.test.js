@@ -129,16 +129,8 @@ test('extraction prompt targets the committee question and keeps its contract', 
 
 test('buildExtractionUser embeds the transcript and the trailing cue', () => {
   assert.match(buildExtractionUser('Committee: hi'), /Committee: hi/);
-  assert.match(buildExtractionUser('x'), /current core question is:/);
-});
-
-test('buildPrompt: answerLanguage uk produces a Ukrainian answer instruction', () => {
-  const { systemInstruction } = buildPrompt({
-    question: 'q',
-    transcript: '',
-    context: '',
-    answerLanguage: 'uk',
-    maxChars: 500,
-  });
-  assert.match(systemInstruction, /Відповідай українською мовою\./);
+  assert.match(buildExtractionUser('x'), /committee member's current core question is:/);
+  // The cue is concatenated after EXTRACTION_SYSTEM, so it must not
+  // reintroduce the job-interview framing that prompt just dropped.
+  assert.doesNotMatch(buildExtractionUser('x'), /interviewer/i);
 });

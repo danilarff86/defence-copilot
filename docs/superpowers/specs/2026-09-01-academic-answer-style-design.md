@@ -137,7 +137,11 @@ question, prefer a genuine short follow-up over the earlier question already
 answered, and keep academic terminology exactly as spoken. It keeps its
 existing contract — output only the question, in the speaker's language —
 so `main.js`'s back-fill of the Current Question box is unaffected.
-`buildExtractionUser()` is unchanged.
+`buildExtractionUser()`'s trailing cue changes only its domain noun —
+"The interviewer's current core question is:" becomes "The committee
+member's ..." — because that cue is concatenated directly after
+`EXTRACTION_SYSTEM` and would otherwise reintroduce the job-interview
+framing the same request just dropped.
 
 ### 5. Documentation
 

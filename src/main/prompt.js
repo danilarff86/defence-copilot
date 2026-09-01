@@ -91,7 +91,7 @@ const EXTRACTION_SYSTEM =
   'You clean up noisy live transcripts of a dissertation defense. The transcript may contain repeats, cross-talk, speech-recognition errors and half-sentences. Identify the CURRENT core question a committee member is putting to the candidate and rewrite it as ONE clean, complete question. Drop introductory remarks, compliments and asides, but keep every meaningful part of a long multi-sentence question. If the latest turn is a short follow-up to an earlier question, return that follow-up rather than the earlier question. Preserve academic and technical terminology exactly as spoken. Output ONLY that question — no prefix, no quotes, no explanation. Write it in the SAME language the committee member is speaking.';
 
 function buildExtractionUser(recentTranscript) {
-  return `Recent turns:\n${recentTranscript}\n\nThe interviewer's current core question is:`;
+  return `Recent turns:\n${recentTranscript}\n\nThe committee member's current core question is:`;
 }
 
 module.exports = { buildPrompt, EXTRACTION_SYSTEM, buildExtractionUser };
