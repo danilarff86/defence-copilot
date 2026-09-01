@@ -2,6 +2,9 @@
 
 const $ = (id) => document.getElementById(id);
 
+// Keep in sync with DEFAULTS.maxChars in src/main/settings.js.
+const DEFAULT_MAX_CHARS = 1200;
+
 const state = {
   listening: false,
   settings: null,
@@ -515,7 +518,7 @@ function endGenerate() {
 
 function updateCounter(text) {
   const n = charCount(text);
-  const max = state.settings ? state.settings.maxChars || 500 : 500;
+  const max = state.settings ? state.settings.maxChars || DEFAULT_MAX_CHARS : DEFAULT_MAX_CHARS;
   const el = $('charCounter');
   el.textContent = `${n} / ${max} chars`;
   el.classList.toggle('over', n > max);
@@ -568,7 +571,7 @@ function openSettings() {
   $('setOllamaModel').value = s.ollamaModel || 'llama3.1';
   $('setSttLang').value = s.sttLanguage || 'en-US';
   $('setAnswerLang').value = s.answerLanguage || 'auto';
-  $('setMaxChars').value = s.maxChars || 500;
+  $('setMaxChars').value = s.maxChars || DEFAULT_MAX_CHARS;
   $('setHotkey').value = s.hotkey || 'Control+A';
   $('setProfile').value = s.interviewProfile || '';
   $('setJD').value = s.jobDescription || '';
@@ -589,7 +592,7 @@ async function saveSettings() {
     ollamaModel: $('setOllamaModel').value.trim() || 'llama3.1',
     sttLanguage: $('setSttLang').value,
     answerLanguage: $('setAnswerLang').value,
-    maxChars: parseInt($('setMaxChars').value, 10) || 500,
+    maxChars: parseInt($('setMaxChars').value, 10) || DEFAULT_MAX_CHARS,
     hotkey: $('setHotkey').value.trim() || 'Control+A',
     interviewProfile: $('setProfile').value,
     jobDescription: $('setJD').value,
