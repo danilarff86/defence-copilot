@@ -13,6 +13,8 @@ All notable changes to this project are documented here. Format loosely follows
 - System-audio capture without Screen Recording permission now fails quietly with a clear prompt instead of throwing `Failed to get sources` / `Video was requested…` unhandled rejections. When the permission is already denied, the app skips the capture attempt and guides you to grant it (continuing mic-only).
 
 ### Changed
+- **Academic answer style**: answers are now flowing spoken prose (about 3–8 sentences) instead of the previous outline form with `- ` bullet points, and are cast as a dissertation-defense reply rather than a job-interview reply. The prompt now treats your Knowledge Base as the authoritative source, reproduces numbers, formulas, algorithm names and experimental conditions verbatim, labels anything drawn from general knowledge, reports contradictions between sources, and refuses to invent facts or references. Question extraction targets a committee member's current question, dropping preambles and preferring a genuine follow-up over an already-answered question.
+- **Answer length default raised** from 500 to 1200 characters, since character count is now a hard ceiling rather than a target. Existing installs still on the old 500 default are migrated automatically (a length you chose yourself is kept); adjust it any time under Settings → Max characters.
 - Renamed the app (display name) to **Real Time Interview Copilot**. The npm package, bundle id (`com.interview.copilot`), repo slug, and local data directory are unchanged, so existing settings/keys/JD/Knowledge Base are preserved.
 
 ### Added
