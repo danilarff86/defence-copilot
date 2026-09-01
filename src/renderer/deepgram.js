@@ -4,7 +4,7 @@ class DeepgramLive {
   /**
    * @param {object} opts
    * @param {string} opts.apiKey
-   * @param {string} opts.language  zh / en-US / multi
+   * @param {string} opts.language  zh / en-US / uk / multi / …
    * @param {number} opts.sampleRate
    * @param {function} opts.onTranscript  ({text, isFinal}) => void
    * @param {function} [opts.onState]      (state, info) => void
@@ -22,8 +22,11 @@ class DeepgramLive {
 
   connect() {
     const multi = this.language === 'multi';
+    // Ukrainian is best served by nova-3 (nova-2 also supports it, but with
+    // higher WER); other single languages keep nova-2 to avoid behavior change.
+    const NOVA3_LANGS = new Set(['multi', 'uk']);
     const params = new URLSearchParams({
-      model: multi ? 'nova-3' : 'nova-2',
+      model: NOVA3_LANGS.has(this.language) ? 'nova-3' : 'nova-2',
       smart_format: 'true',
       interim_results: 'true',
       encoding: 'linear16',
