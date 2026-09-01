@@ -74,3 +74,14 @@ test('extraction prompt helpers', () => {
   assert.match(buildExtractionUser('Interviewer: hi'), /Interviewer: hi/);
   assert.match(buildExtractionUser('x'), /current core question is:/);
 });
+
+test('buildPrompt: answerLanguage uk produces a Ukrainian answer instruction', () => {
+  const { systemInstruction } = buildPrompt({
+    question: 'q',
+    transcript: '',
+    context: '',
+    answerLanguage: 'uk',
+    maxChars: 500,
+  });
+  assert.match(systemInstruction, /Відповідай українською мовою\./);
+});
