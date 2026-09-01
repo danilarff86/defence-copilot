@@ -6,6 +6,7 @@ All notable changes to this project are documented here. Format loosely follows
 ## [Unreleased]
 
 ### Added
+- **Ukrainian language support**: `Українська` is now selectable as the transcript language (Deepgram `nova-3`, `language=uk`) and as the answer language (answers generated in Ukrainian). Ukrainian documents in the Knowledge Base were already supported and are now covered by tests.
 - **Windows & Linux support for running**: npm scripts are now cross-platform (`cross-env`), so `npm start` works on Windows (previously the `VAR=` prefix broke cmd). `make run` adapts to the OS — macOS builds & opens the signed app; Windows/Linux launch via `npm start`. Prebuilt `.exe` (Windows) and `.AppImage` (Linux) ship in Releases.
 
 ### Fixed

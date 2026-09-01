@@ -27,3 +27,16 @@ test('chunkText: an oversized single paragraph is hard-split', () => {
   const chunks = chunkText('B'.repeat(2500), 900, 150);
   assert.ok(chunks.length >= 3);
 });
+
+test('chunkText: Cyrillic (Ukrainian) text chunks losslessly', () => {
+  const para = 'Я працював над масштабуванням інференсу великих мовних моделей у Києві. '.repeat(
+    20,
+  );
+  const text = Array(5).fill(para.trim()).join('\n\n');
+  const chunks = chunkText(text, 900, 150);
+  assert.ok(chunks.length > 1);
+  const joined = chunks.join(' ');
+  assert.match(joined, /масштабуванням інференсу/);
+  assert.doesNotMatch(joined, /�/); // no replacement characters
+  for (const c of chunks) assert.ok(c.length <= 900 + 1, `chunk too long: ${c.length}`);
+});

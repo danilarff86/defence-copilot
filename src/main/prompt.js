@@ -16,7 +16,9 @@ function buildPrompt({
       ? '请用中文作答。'
       : answerLanguage === 'en'
         ? 'Answer in English.'
-        : '使用与问题相同的语言作答。';
+        : answerLanguage === 'uk'
+          ? 'Відповідай українською мовою.'
+          : '使用与问题相同的语言作答。';
 
   const lines = [
     '你是正在参加面试的候选人本人。下面会给出面试现场的对话片段 / 问题，以及可能相关的个人资料/知识库内容。',
