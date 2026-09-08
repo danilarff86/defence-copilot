@@ -199,10 +199,10 @@ function registerHotkey() {
     const ok = globalShortcut.register(key, () => {
       if (mainWindow) mainWindow.webContents.send('hotkey-generate');
     });
-    if (!ok) console.warn(`热键 ${key} 注册失败（可能被占用）`);
+    if (!ok) console.warn(`Failed to register hotkey ${key} (may already be in use)`);
     return ok;
   } catch (e) {
-    console.error('注册热键出错:', e);
+    console.error('Error registering hotkey:', e);
     return false;
   }
 }
@@ -225,11 +225,14 @@ ipcMain.handle('clear-documents', () => store.clear());
 
 ipcMain.handle('pick-documents', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: '选择面试资料（简历 / JD / 笔记等）',
+    title: 'Select interview materials (resume / JD / notes, etc.)',
     properties: ['openFile', 'multiSelections'],
     filters: [
-      { name: '文档', extensions: ['txt', 'md', 'markdown', 'pdf', 'docx', 'json', 'csv', 'log'] },
-      { name: '全部文件', extensions: ['*'] },
+      {
+        name: 'Documents',
+        extensions: ['txt', 'md', 'markdown', 'pdf', 'docx', 'json', 'csv', 'log'],
+      },
+      { name: 'All Files', extensions: ['*'] },
     ],
   });
   if (result.canceled) return { canceled: true, docs: store.summary() };
@@ -248,18 +251,18 @@ ipcMain.handle('pick-documents', async () => {
 
 // Add manually pasted document text
 ipcMain.handle('add-text-document', (_e, { name, text }) => {
-  store.add(name || '手动输入', text || '');
+  store.add(name || 'Manual input', text || '');
   return store.summary();
 });
 
 // Pick and parse a JD file, returning plain text (persistence is handled by settings)
 ipcMain.handle('pick-jd', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: '选择岗位 JD 文件',
+    title: 'Select job description file',
     properties: ['openFile'],
     filters: [
-      { name: '文档', extensions: ['txt', 'md', 'markdown', 'pdf', 'docx', 'json'] },
-      { name: '全部文件', extensions: ['*'] },
+      { name: 'Documents', extensions: ['txt', 'md', 'markdown', 'pdf', 'docx', 'json'] },
+      { name: 'All Files', extensions: ['*'] },
     ],
   });
   if (result.canceled || !result.filePaths[0]) return null;
@@ -294,13 +297,17 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
   const q = (question || '').trim();
   const tr = (transcript || '').trim();
   if (!q && !tr) {
-    send('answer-error', { message: '没有识别到对话内容，请先开始监听，或在问题框手动输入。' });
+    send('answer-error', {
+      message: 'No dialogue detected. Start listening first, or type your question manually.',
+    });
     return;
   }
 
   const prov = resolveProvider(currentSettings);
   if (prov.needsKey && !prov.apiKey) {
-    send('answer-error', { message: `未配置 ${prov.label} API Key，请在「设置」中填写。` });
+    send('answer-error', {
+      message: `${prov.label} API Key is not configured. Please set it in "Settings".`,
+    });
     return;
   }
 

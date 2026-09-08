@@ -73,7 +73,7 @@ function save(partial) {
   try {
     fs.writeFileSync(settingsPath(), JSON.stringify(merged, null, 2), 'utf8');
   } catch (e) {
-    console.error('保存设置失败:', e);
+    console.error('Failed to save settings:', e);
   }
   return merged;
 }
