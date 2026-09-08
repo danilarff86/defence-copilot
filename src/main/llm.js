@@ -51,7 +51,7 @@ async function generateWithFallback({ streamFn, models, retries = 1, onStart, ..
       }
     }
   }
-  throw lastErr || new Error('生成失败：所有模型均不可用');
+  throw lastErr || new Error('Generation failed: all models are unavailable');
 }
 
 module.exports = { GenError, TRANSIENT, generateWithFallback };

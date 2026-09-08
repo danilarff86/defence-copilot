@@ -47,7 +47,7 @@ function persist() {
   try {
     fs.writeFileSync(filePath(), JSON.stringify({ docs }, null, 2), 'utf8');
   } catch (e) {
-    console.error('保存知识库失败:', e);
+    console.error('Failed to save knowledge base:', e);
   }
 }
 
@@ -100,10 +100,10 @@ function summary() {
 function buildContext(maxChars = 60000) {
   ensureLoaded();
   if (docs.length === 0) return '';
-  const blocks = docs.map((d) => `### 资料：${d.name}\n${d.text}`);
+  const blocks = docs.map((d) => `### Material: ${d.name}\n${d.text}`);
   let joined = blocks.join('\n\n---\n\n');
   if (joined.length > maxChars) {
-    joined = joined.slice(0, maxChars) + '\n\n[资料过长，已截断]';
+    joined = joined.slice(0, maxChars) + '\n\n[Material too long, truncated]';
   }
   return joined;
 }

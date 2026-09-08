@@ -61,7 +61,7 @@ async function generateAnswerStream({
     } catch (_e) {
       /* ignore */
     }
-    throw new GenError(res.status, `生成失败 (${res.status}): ${txt.slice(0, 400)}`);
+    throw new GenError(res.status, `Generation failed (${res.status}): ${txt.slice(0, 400)}`);
   }
 
   if (onStart) onStart();

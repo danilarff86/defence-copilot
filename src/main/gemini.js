@@ -23,7 +23,7 @@ async function generateAnswerStream({
   onStart,
   onChunk,
 }) {
-  if (!apiKey) throw new Error('缺少 Gemini API Key');
+  if (!apiKey) throw new Error('Missing Gemini API Key');
 
   const url = `${BASE}/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(apiKey)}`;
   const buildBody = (withThinking) => ({
@@ -57,7 +57,7 @@ async function generateAnswerStream({
     } catch (_e) {
       /* ignore */
     }
-    throw new GenError(res.status, `生成失败 (${res.status}): ${txt.slice(0, 400)}`);
+    throw new GenError(res.status, `Generation failed (${res.status}): ${txt.slice(0, 400)}`);
   }
 
   if (onStart) onStart();

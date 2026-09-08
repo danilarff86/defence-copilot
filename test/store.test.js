@@ -43,6 +43,6 @@ test('store: buildContext truncates when over the limit', () => {
   store.add('big.txt', 'x'.repeat(1000));
   const ctx = store.buildContext(200);
   assert.ok(ctx.length <= 200 + 40);
-  assert.match(ctx, /已截断/);
+  assert.match(ctx, /truncated/);
   store.clear();
 });

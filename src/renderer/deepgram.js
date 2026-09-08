@@ -71,18 +71,18 @@ class DeepgramLive {
           this.onTranscript({ text: text.trim(), isFinal: !!data.is_final });
         }
       } else if (data.type === 'Error') {
-        this.onState('error', data.description || data.message || 'Deepgram 错误');
+        this.onState('error', data.description || data.message || 'Deepgram error');
       }
     };
 
     this.ws.onerror = () => {
-      this.onState('error', 'WebSocket 连接错误（请检查 Deepgram API Key / 网络）');
+      this.onState('error', 'WebSocket connection error (check Deepgram API Key / network)');
     };
 
     this.ws.onclose = (evt) => {
       clearInterval(this.keepAlive);
       this.keepAlive = null;
-      this.onState('closed', this.closedByUser ? '' : `连接关闭(${evt.code})`);
+      this.onState('closed', this.closedByUser ? '' : `Connection closed (${evt.code})`);
     };
   }
 

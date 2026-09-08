@@ -19,7 +19,7 @@ async function parseFile(filePath) {
       const data = await pdfParse(fs.readFileSync(filePath));
       return data.text || '';
     } catch (e) {
-      throw new Error(`解析 PDF 失败：${e.message}`);
+      throw new Error(`Failed to parse PDF: ${e.message}`);
     }
   }
 
@@ -29,7 +29,7 @@ async function parseFile(filePath) {
       const result = await mammoth.extractRawText({ path: filePath });
       return result.value || '';
     } catch (e) {
-      throw new Error(`解析 DOCX 失败：${e.message}`);
+      throw new Error(`Failed to parse DOCX: ${e.message}`);
     }
   }
 
