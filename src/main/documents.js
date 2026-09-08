@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * 解析单个文件为纯文本。支持 txt/md/json/csv（原生）、pdf、docx。
+ * Parse a single file into plain text. Supports txt/md/json/csv (natively), pdf, docx.
  */
 async function parseFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
@@ -33,12 +33,12 @@ async function parseFile(filePath) {
     }
   }
 
-  // 兜底：当作纯文本读取
+  // Fallback: read as plain text
   return fs.readFileSync(filePath, 'utf8');
 }
 
 /**
- * 将长文本切块。按段落聚合到 ~maxLen 字符，块间保留 overlap 重叠。
+ * Chunk long text. Aggregates by paragraph up to ~maxLen characters, keeping an overlap between chunks.
  */
 function chunkText(text, maxLen = 900, overlap = 150) {
   const clean = text
@@ -61,7 +61,7 @@ function chunkText(text, maxLen = 900, overlap = 150) {
     if (!p) continue;
 
     if (p.length > maxLen) {
-      // 段落过长：按句子/字符硬切
+      // Paragraph too long: hard-split by sentence/character
       push();
       cur = '';
       for (let i = 0; i < p.length; i += maxLen - overlap) {
@@ -72,7 +72,7 @@ function chunkText(text, maxLen = 900, overlap = 150) {
 
     if ((cur + '\n\n' + p).length > maxLen) {
       push();
-      // 用上一块的尾部作为重叠，保留上下文
+      // Use the tail of the previous chunk as the overlap, preserving context
       const tail = cur.slice(Math.max(0, cur.length - overlap));
       cur = (tail ? tail + '\n\n' : '') + p;
     } else {

@@ -4,9 +4,9 @@ const test = require('node:test');
 const assert = require('node:assert');
 const { generateWithFallback, GenError } = require('../src/main/llm');
 
-// 用一个假的 streamFn 来测试重试/兜底逻辑，不触网。
+// Uses a fake streamFn to test the retry/fallback logic without touching the network.
 function makeStreamFn(plan) {
-  // plan: { [model]: 'ok' | statusCode } ; 'ok' 会调用 onStart 并返回文本
+  // plan: { [model]: 'ok' | statusCode } ; 'ok' calls onStart and returns text
   const calls = [];
   const fn = async ({ model, onStart, onChunk }) => {
     calls.push(model);

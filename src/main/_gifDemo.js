@@ -1,8 +1,11 @@
 'use strict';
 
-// 仅用于生成 README 演示 GIF：返回一串“帧步骤”，每步注入一份完整的 DOM 快照 + 停留帧数。
-// 时间线：面试官提问(interim→final) → 你回答 → 面试官追问(带 Question detected) →
-//        Ctrl+A 回填问题 → 答案逐段流式 → 停在完整答案。
+// Only used to generate the README demo GIF: returns a series of "frame
+// steps," each injecting a full DOM snapshot plus a hold frame count.
+// Timeline: interviewer asks (interim→final) → you answer → interviewer
+//           follows up (with Question detected) →
+//           Ctrl+A fills back the question → the answer streams in piece by
+//           piece → holds on the complete answer.
 
 const sparkle =
   '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>';

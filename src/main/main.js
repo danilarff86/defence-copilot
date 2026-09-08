@@ -21,8 +21,24 @@ const gemini = require('./gemini');
 const openaiCompat = require('./openaiCompat');
 const prompt = require('./prompt');
 const { PROVIDERS } = require('./config');
+const { FEATURE_SWITCH, buildLoopbackFeatures } = require('./audioLoopback');
 
-// 按当前 Provider（config.js 注册表）解析出：流式实现 / Key / baseURL / 模型链
+// System-audio capture on macOS/Linux needs a Chromium feature flag, and it
+// must be set before app ready, so this runs at module top level immediately
+// rather than moving into whenReady().
+function applyLoopbackFeatureFlags() {
+  const merged = buildLoopbackFeatures({
+    platform: process.platform,
+    existing: app.commandLine.getSwitchValue(FEATURE_SWITCH),
+  });
+  if (!merged) return;
+  if (app.commandLine.hasSwitch(FEATURE_SWITCH)) app.commandLine.removeSwitch(FEATURE_SWITCH);
+  app.commandLine.appendSwitch(FEATURE_SWITCH, merged);
+}
+
+applyLoopbackFeatureFlags();
+
+// Resolve for the current Provider (the config.js registry): stream impl / Key / baseURL / model chain
 function resolveProvider(s) {
   const id = s.provider && PROVIDERS[s.provider] ? s.provider : 'gemini';
   const p = PROVIDERS[id];
@@ -40,7 +56,7 @@ function resolveProvider(s) {
   };
 }
 
-// 固定 app 名，保证 dev 运行与打包后的 .app 使用同一份 userData/settings.json
+// Fix the app name so a dev run and the packaged .app share the same userData/settings.json
 app.setName('interview-copilot');
 
 let mainWindow = null;
@@ -80,10 +96,11 @@ function createWindow() {
     });
   }
 
-  // 截图模式：注入一段演示对话，截取窗口写到 assets/screenshot.png 后退出（仅用于生成 README 图）。
+  // Screenshot mode: inject a demo conversation, capture the window to
+  // assets/screenshot.png, then quit (only used to generate README images).
   if (process.env.INTERVIEW_SCREENSHOT) {
     mainWindow.webContents.on('did-finish-load', () => {
-      // 等 init() 跑完再注入演示内容，避免被 showEmptyState 覆盖。
+      // Wait for init() to finish before injecting the demo content, so it isn't overwritten by showEmptyState.
       setTimeout(async () => {
         try {
           const fs = require('fs');
@@ -102,7 +119,8 @@ function createWindow() {
     });
   }
 
-  // GIF 模式：按 _gifDemo 的时间线逐帧截图，用 ffmpeg 合成 assets/demo.gif（需要 ffmpeg）。
+  // GIF mode: capture a frame per step in _gifDemo's timeline, then assemble
+  // assets/demo.gif with ffmpeg (requires ffmpeg).
   if (process.env.INTERVIEW_GIF) {
     mainWindow.webContents.on('did-finish-load', () => {
       setTimeout(async () => {
@@ -165,12 +183,14 @@ function createWindow() {
   });
 }
 
-// 允许渲染进程通过 getDisplayMedia 采集系统声音（面试官）。
+// Let the renderer process capture system audio (the interviewer) via getDisplayMedia.
 function setupDisplayMediaLoopback() {
   session.defaultSession.setDisplayMediaRequestHandler(
     async (request, callback) => {
-      // macOS 13+ : audio: 'loopback' 直接抓系统声音（需要「屏幕录制」权限）。
-      // getSources 失败几乎都是没授予屏幕录制权限——安静地拒绝，由渲染层引导用户去授权。
+      // macOS 13+: audio: 'loopback' captures system audio directly (needs
+      // the "Screen Recording" permission).
+      // A getSources failure is almost always a missing Screen Recording
+      // grant — decline quietly and let the renderer guide the user to authorize it.
       try {
         const sources = await desktopCapturer.getSources({ types: ['screen'] });
         if (sources && sources.length) {
@@ -242,13 +262,13 @@ ipcMain.handle('pick-documents', async () => {
   return { canceled: false, docs: store.summary(), errors };
 });
 
-// 添加手动粘贴的资料文本
+// Add manually pasted document text
 ipcMain.handle('add-text-document', (_e, { name, text }) => {
   store.add(name || '手动输入', text || '');
   return store.summary();
 });
 
-// 选择并解析一个 JD 文件，返回纯文本（持久化由设置完成）
+// Pick and parse a JD file, returning plain text (persistence is handled by settings)
 ipcMain.handle('pick-jd', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: '选择岗位 JD 文件',
@@ -267,7 +287,7 @@ ipcMain.handle('pick-jd', async () => {
   }
 });
 
-// 取消正在进行的生成
+// Cancel an in-progress generation
 ipcMain.on('cancel-generate', () => {
   if (activeGen) {
     try {
@@ -279,7 +299,7 @@ ipcMain.on('cancel-generate', () => {
   }
 });
 
-// 生成答案（流式）
+// Generate an answer (streaming)
 ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
   const send = (channel, payload) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -300,7 +320,7 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
     return;
   }
 
-  // 取消上一个
+  // Cancel the previous one
   if (activeGen) {
     try {
       activeGen.controller.abort();
@@ -322,10 +342,14 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
     jobDescription: currentSettings.jobDescription || '',
   });
 
-  // 输出 token 上限。
-  // - OpenAI 兼容类（含 DeepSeek/Ollama）可能是“推理模型”：max_tokens 需同时覆盖隐藏思考链，
-  //   预算太小会导致答案为空，因此放宽，答案长度交给提示词控制（思考链不展示给用户）。
-  // - Gemini 已关闭思考(thinkingBudget=0)，可按字数上限收紧做长度兜底。
+  // Output token ceiling.
+  // - OpenAI-compatible providers (including DeepSeek/Ollama) may be
+  //   "reasoning models": max_tokens must also cover the hidden thinking
+  //   chain, and too small a budget leaves the answer empty, so this is
+  //   generous and answer length is controlled by the prompt instead (the
+  //   thinking chain is never shown to the user).
+  // - Gemini already has thinking disabled (thinkingBudget=0), so this can be
+  //   tightened against the character cap as a length backstop.
   const maxChars = currentSettings.maxChars || 500;
   const lang = currentSettings.answerLanguage || 'auto';
   const perChar = lang === 'en' ? 0.5 : 1.1;
@@ -344,8 +368,10 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
     signal: controller.signal,
   };
 
-  // 提取模式（问题框留空）：并行跑一个轻量调用，把识别到的问题回填到「Current Question」框。
-  // 问题只看最近几轮（末尾 6 行），与作答并行、不阻塞。
+  // Extraction mode (question box left empty): run a lightweight call in
+  // parallel that fills the recognized question back into the "Current
+  // Question" box. It only looks at the most recent turns (the last 6
+  // lines), runs alongside answer generation, and doesn't block it.
   if (!q && tr) {
     const recentTr = tr.split('\n').slice(-6).join('\n');
     llm
@@ -381,7 +407,7 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
   }
 });
 
-// 屏幕录制权限（macOS）—— 抓系统声音(Loopback) 需要它
+// Screen Recording permission (macOS) — needed to capture system audio (loopback)
 ipcMain.handle('get-screen-permission', () => {
   if (process.platform !== 'darwin') return 'granted';
   return systemPreferences.getMediaAccessStatus('screen');
@@ -396,7 +422,7 @@ ipcMain.handle('open-screen-settings', () => {
   return true;
 });
 
-// 麦克风权限（macOS）
+// Microphone permission (macOS)
 ipcMain.handle('ensure-mic-permission', async () => {
   if (process.platform !== 'darwin') return true;
   const status = systemPreferences.getMediaAccessStatus('microphone');
@@ -411,7 +437,7 @@ ipcMain.handle('ensure-mic-permission', async () => {
 // ---------- app lifecycle ----------
 
 app.whenReady().then(() => {
-  // dev 运行(npm start)时也给 dock 上我们的图标；打包后用 bundle 自带的 icns。
+  // Give the dock our icon during a dev run (npm start) too; the packaged build uses the bundle's own icns.
   if (process.platform === 'darwin' && app.dock) {
     try {
       const devIcon = path.join(__dirname, '..', '..', 'build', 'icon.png');

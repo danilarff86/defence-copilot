@@ -1,9 +1,9 @@
 'use strict';
 
-// 答案 Provider 注册表。
-// type: 'openai'  → 走 openaiCompat.js（OpenAI 兼容 Chat Completions）
-//       'gemini'  → 走 gemini.js
-// keyField/modelField/baseURLField 指向 settings.js 中的字段名。
+// Answer Provider registry.
+// type: 'openai'  → goes through openaiCompat.js (OpenAI-compatible Chat Completions)
+//       'gemini'  → goes through gemini.js
+// keyField/modelField/baseURLField point to field names in settings.js.
 const PROVIDERS = {
   deepseek: {
     label: 'DeepSeek',
@@ -28,7 +28,7 @@ const PROVIDERS = {
     type: 'openai',
     baseURL: 'http://localhost:11434/v1/chat/completions',
     baseURLField: 'ollamaBaseURL',
-    keyField: null, // 本地，无需 Key
+    keyField: null, // Local, no Key needed
     modelField: 'ollamaModel',
     defaultModel: 'llama3.1',
     fallbacks: [],

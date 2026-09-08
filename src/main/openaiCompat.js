@@ -1,13 +1,13 @@
 'use strict';
 
-// OpenAI 兼容的 Chat Completions 客户端（SSE 流式）。
-// 用于 DeepSeek / OpenAI / Ollama 等：只需提供不同的 baseURL（+可选 apiKey）。
+// An OpenAI-compatible Chat Completions client (SSE streaming).
+// Used for DeepSeek / OpenAI / Ollama and similar: just supply a different baseURL (+ an optional apiKey).
 const { GenError } = require('./llm');
 
 const DEFAULT_ENDPOINT = 'https://api.deepseek.com/chat/completions';
 
-// 从一行 SSE 的 data 负载中取出文本增量；忽略 reasoning_content（思考链不展示）。
-// 导出供单测使用。
+// Extracts the text delta from one SSE data line's payload; ignores reasoning_content (the thinking chain is never shown).
+// Exported for use by unit tests.
 function deltaFromSSEData(payload) {
   if (!payload || payload === '[DONE]') return '';
   let obj;

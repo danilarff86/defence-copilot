@@ -1,14 +1,14 @@
 'use strict';
 
-// 直接使用 Gemini REST API（无需第三方 SDK），主进程 Node 自带 fetch。
+// Talks to the Gemini REST API directly (no third-party SDK needed) — the main process's Node has fetch built in.
 const { GenError } = require('./llm');
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 
 /**
- * 流式生成答案（单模型、单次）。
- * @param {function} [opts.onStart]  在确认服务端 200、即将开始输出前调用一次
- * @param {function} opts.onChunk    每收到一段文本调用 onChunk(textDelta)
- * @returns {Promise<string>} 完整文本
+ * Streaming answer generation (single model, single attempt).
+ * @param {function} [opts.onStart]  called once, right before output starts, after the server 200 is confirmed
+ * @param {function} opts.onChunk    called with onChunk(textDelta) for each piece of text received
+ * @returns {Promise<string>} the full text
  */
 async function generateAnswerStream({
   apiKey,
@@ -17,7 +17,7 @@ async function generateAnswerStream({
   userText,
   maxOutputTokens = 2048,
   temperature = 0.6,
-  // 思考预算：0 = 关闭思考（更快、且思考不再吃掉输出 token 导致截断）
+  // Thinking budget: 0 = thinking disabled (faster, and thinking no longer eats into the output tokens and causes truncation)
   thinkingBudget = 0,
   signal,
   onStart,
@@ -45,7 +45,7 @@ async function generateAnswerStream({
     });
 
   let res = await post(thinkingBudget != null);
-  // 个别模型不接受 thinkingConfig（400）：去掉该字段重试一次
+  // Some models reject thinkingConfig (400): drop that field and retry once
   if (!res.ok && res.status === 400 && thinkingBudget != null) {
     res = await post(false);
   }
@@ -82,7 +82,7 @@ async function generateAnswerStream({
         }
       }
     } catch (_e) {
-      // 不完整的 JSON 行：忽略
+      // Incomplete JSON line: ignore
     }
   };
 

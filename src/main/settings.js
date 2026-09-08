@@ -9,7 +9,7 @@ const SETTINGS_VERSION = 2;
 
 const DEFAULTS = {
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
-  // 答案 Provider： deepseek / gemini / openai / ollama
+  // Answer Provider: deepseek / gemini / openai / ollama
   provider: 'gemini',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
@@ -18,25 +18,25 @@ const DEFAULTS = {
   openaiModel: 'gpt-4o-mini',
   ollamaBaseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1/chat/completions',
   ollamaModel: 'llama3.1',
-  // 转写语言： zh / en-US / multi
+  // Transcription language: zh / en-US / multi
   sttLanguage: 'en-US',
-  // 生成模型（可编辑，填你账号能用的任意 Flash 模型 ID）
+  // Generation model (editable — put in any Flash model ID your account can use)
   genModel: 'gemini-2.5-flash',
-  // 注入到上下文的资料最大字符数
+  // Max characters of document material injected into the context
   maxContextChars: 60000,
-  // 全局热键：按下后自动识别问题并生成答案
+  // Global hotkey: pressing it auto-recognizes the question and generates an answer
   hotkey: 'Control+A',
-  // 自动作答：监测到面试官问完一个问题就自动触发（无需按热键）
+  // Auto-answer: fires automatically once the interviewer's question is detected as finished (no hotkey press needed)
   autoAnswer: false,
-  // 答案字数上限（作为硬性上限，不是目标长度；学术散文需要更大预算）
+  // Answer character cap (a hard upper bound, not a target length; academic prose needs a larger budget)
   maxChars: 1200,
-  // 答案语言： auto（跟随问题） / zh / en
+  // Answer language: auto (follows the question) / zh / en
   answerLanguage: 'auto',
-  // 面试背景与作答风格（注入到系统提示，最高优先级）
+  // Interview background and answering style (injected into the system prompt, highest priority)
   interviewProfile: '',
-  // 目标岗位 JD（持久化；上传或粘贴，作答时据此定制）
+  // Target job description (persisted; uploaded or pasted, used to tailor answers)
   jobDescription: '',
-  // 设置结构版本，供 migrate() 做一次性迁移
+  // Settings schema version, used by migrate() for one-time migrations
   schemaVersion: SETTINGS_VERSION,
 };
 
