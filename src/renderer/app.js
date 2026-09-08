@@ -8,26 +8,26 @@ const DEFAULT_MAX_CHARS = 1200;
 const state = {
   listening: false,
   settings: null,
-  // 采集资源
+  // Capture resources
   contexts: [],
   nodes: [],
   streams: [],
   dgMic: null,
   dgSys: null,
-  // 转写
+  // Transcription
   interim: { interviewer: null, interviewee: null },
   lastFinalSpeaker: null,
-  history: [], // 已敲定的对话（去重）：{ role, text }
+  history: [], // Finalized conversation turns (deduped): { role, text }
   sessionStart: null,
-  autoQuestion: '', // 上次自动识别并回填到问题框的问题（用户未改动时视作"留空"）
-  autoTimer: null, // 自动作答的去抖定时器
-  lastAutoKey: null, // 上次自动作答的问题（去重，避免重复触发）
-  // 生成
+  autoQuestion: '', // The question last auto-recognized and filled into the question box (treated as "empty" if the user hasn't changed it)
+  autoTimer: null, // Debounce timer for auto-answer
+  lastAutoKey: null, // The question that was last auto-answered (deduped to avoid firing twice)
+  // Generation
   reqId: 0,
   generating: false,
 };
 
-// ---------------- 工具 ----------------
+// ---------------- Utilities ----------------
 function toast(msg, isError = false) {
   const el = $('toast');
   el.textContent = msg;
@@ -48,7 +48,7 @@ function charCount(s) {
   return [...(s || '')].length;
 }
 
-// ---------------- 转写显示 ----------------
+// ---------------- Transcript display ----------------
 const MIC_SVG =
   '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
 
@@ -176,7 +176,7 @@ function normalizeText(s) {
     .trim();
 }
 
-// 把已敲定的句子写入历史，并对双声道串音/ASR 重复做去重
+// Writes a finalized sentence into history, and dedupes against cross-channel bleed / ASR repeats
 function pushHistory(role, text) {
   const norm = normalizeText(text);
   if (!norm) return;
@@ -184,7 +184,7 @@ function pushHistory(role, text) {
   for (const h of recent) {
     const hn = normalizeText(h.text);
     if (hn === norm || hn.includes(norm) || norm.includes(hn)) {
-      // 近似重复：保留信息更全的那条
+      // Near-duplicate: keep whichever line carries more information
       if (norm.length > hn.length) {
         h.text = text;
         h.role = role;
@@ -196,7 +196,7 @@ function pushHistory(role, text) {
   if (state.history.length > 60) state.history.shift();
 }
 
-// 取最近几轮对话（去重后）交给大模型提取问题
+// Take the most recent turns of the conversation (deduped) and hand them to the LLM to extract the question
 function buildRecentDialogue(maxItems = 12) {
   return state.history
     .slice(-maxItems)
@@ -204,7 +204,7 @@ function buildRecentDialogue(maxItems = 12) {
     .join('\n');
 }
 
-// 把 "Control+A" 渲染成 ⌃Control / A 之类的按键 chip
+// Render "Control+A" as key chips like ⌃Control / A
 function renderHotkeyHint(hotkey) {
   const sym = {
     control: '⌃ Control',
@@ -234,20 +234,21 @@ function handleTranscript(role, { text, isFinal }) {
   scheduleAuto(role);
 }
 
-// ---------------- 自动作答（监测到问题就触发） ----------------
-const AUTO_DELAY_MS = 1300; // 面试官停顿这么久 ≈ 一个问题问完
+// ---------------- Auto-answer (fires when a question is detected) ----------------
+const AUTO_DELAY_MS = 1300; // A pause this long from the interviewer ≈ they finished asking a question
 
 function scheduleAuto(role) {
   clearTimeout(state.autoTimer);
   if (!state.settings.autoAnswer || !state.listening) return;
-  if (role === 'interviewee') return; // 你开口了 → 取消待触发的自动作答
-  // 面试官每说完一句就重置去抖；停顿 AUTO_DELAY_MS 后判定问完
+  if (role === 'interviewee') return; // You spoke → cancel the pending auto-answer
+  // Reset the debounce every time the interviewer finishes a sentence; treat
+  // it as a finished question after a pause of AUTO_DELAY_MS.
   state.autoTimer = setTimeout(maybeAutoAnswer, AUTO_DELAY_MS);
 }
 
 function maybeAutoAnswer() {
   if (!state.settings.autoAnswer || !state.listening || state.generating) return;
-  // 当前问题轮 = 最后一次「你」说话之后的面试官内容
+  // Current question turn = interviewer content after the last time "You" spoke
   let lastYou = -1;
   for (let i = state.history.length - 1; i >= 0; i--) {
     if (state.history[i].role === 'interviewee') {
@@ -263,12 +264,12 @@ function maybeAutoAnswer() {
     .trim();
   if (turnText.length < 15 || !isQuestion(turnText)) return;
   const key = normalizeText(turnText);
-  if (key === state.lastAutoKey) return; // 本轮已自动答过
+  if (key === state.lastAutoKey) return; // Already auto-answered this turn
   state.lastAutoKey = key;
   triggerGenerate();
 }
 
-// ---------------- 音频采集 ----------------
+// ---------------- Audio capture ----------------
 async function listInputDevices() {
   try {
     const devices = await navigator.mediaDevices.enumerateDevices();
@@ -288,7 +289,7 @@ async function listInputDevices() {
     });
     if (prevMic) micSel.value = prevMic;
 
-    // 系统音源：保留 loopback 选项 + 追加可选输入设备（如 BlackHole）
+    // System audio source: keep the loopback option and append optional input devices (e.g. BlackHole)
     sysSel.innerHTML = '<option value="__loopback__">System Audio (Loopback)</option>';
     inputs.forEach((d, i) => {
       const opt = document.createElement('option');
@@ -307,7 +308,8 @@ async function getMicStream(deviceId) {
   return navigator.mediaDevices.getUserMedia({
     audio: {
       ...(typeof audio === 'object' ? audio : {}),
-      echoCancellation: false,
+      // Enable echo cancellation: otherwise, when audio plays through speakers, the microphone picks up the other party's voice and it gets labelled You.
+      echoCancellation: true,
       noiseSuppression: true,
     },
   });
@@ -331,10 +333,23 @@ async function handleSystemCaptureError(e, sysVal) {
 
 async function getSystemStream(value) {
   if (value === '__loopback__') {
-    // 通过主进程的 displayMediaRequestHandler 抓取系统声音
+    // Captures system audio via the main process's displayMediaRequestHandler.
+    // video: true must be requested or loopback fails outright — the video track is discarded immediately after.
     const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-    // 丢弃视频轨，只保留音频
-    stream.getVideoTracks().forEach((t) => t.stop());
+    stream.getVideoTracks().forEach((t) => {
+      t.stop();
+      stream.removeTrack(t);
+    });
+    // No audio track means the capture didn't take effect — most likely a
+    // missing permission. Electron reports nothing when a CoreAudio Tap fails,
+    // and getMediaAccessStatus has no media type for system audio, so this
+    // check is the app's only signal that it happened.
+    // This must throw, or it silently falls back to mic-only and labels the
+    // interviewer's speech as You.
+    if (!stream.getAudioTracks().length) {
+      stream.getTracks().forEach((t) => t.stop());
+      throw new Error('system audio returned no audio track');
+    }
     return stream;
   }
   return navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: value } } });
@@ -345,7 +360,7 @@ async function wireStream(stream, dg) {
   await ctx.audioWorklet.addModule('pcm-worklet.js');
   const source = ctx.createMediaStreamSource(stream);
   const worklet = new AudioWorkletNode(ctx, 'pcm-worklet');
-  // 静音接到 destination，确保 worklet 持续处理且不产生回声
+  // Connect a silent gain node to destination, to keep the worklet processing continuously without producing an echo
   const silent = ctx.createGain();
   silent.gain.value = 0;
 
@@ -357,7 +372,7 @@ async function wireStream(stream, dg) {
 
   state.contexts.push(ctx);
   state.nodes.push(source, worklet, silent);
-  // dg 期望的采样率以实际 AudioContext 为准
+  // dg's expected sample rate follows the actual AudioContext
   dg.sampleRate = ctx.sampleRate;
 }
 
@@ -387,7 +402,9 @@ async function startListening() {
     let sysStream = null;
     const sysVal = $('sysSelect').value;
     try {
-      // Loopback 需要屏幕录制权限：已明确拒绝时直接引导，不触发 getDisplayMedia（避免一串报错）。
+      // Loopback needs Screen Recording permission: if it's already been
+      // explicitly denied, guide the user directly instead of calling
+      // getDisplayMedia (which would just produce a string of errors).
       if (sysVal === '__loopback__' && (await window.api.getScreenPermission()) === 'denied') {
         await handleSystemCaptureError(new Error('Screen Recording permission denied'), sysVal);
       } else {
@@ -430,7 +447,7 @@ async function startListening() {
     setLive(true);
     setListeningUI(true);
     setStatus('Listening', 'live');
-    // 拿到权限后刷新设备名称
+    // Refresh device names now that permission has been granted
     listInputDevices();
   } catch (e) {
     console.error(e);
@@ -481,12 +498,14 @@ async function stopListening() {
   setStatus('Idle');
 }
 
-// ---------------- 生成答案 ----------------
+// ---------------- Generate an answer ----------------
 function triggerGenerate() {
   let manual = $('questionBox').value.trim();
-  // 框里若只是上次自动识别的问题（用户没改），仍按"自动从最近对话提取"处理
+  // If the box only holds the previously auto-recognized question (the user
+  // hasn't edited it), still treat it as "auto-extract from recent conversation."
   if (manual && manual === state.autoQuestion) manual = '';
-  // 作答上下文：最近 15 轮对话历史（问题检测在主进程里只取其末尾几轮）
+  // Answer context: the last 15 turns of conversation history (question
+  // detection in the main process only looks at its final few turns)
   const transcript = buildRecentDialogue(15);
   if (!manual && !transcript) {
     toast('Nothing to answer yet — start listening or type a question', true);
@@ -505,7 +524,7 @@ function triggerGenerate() {
     const turns = transcript.split('\n').length;
     toast(`Detecting the question from the last ${turns} turns…`);
   }
-  // manual 为空 → 让 Gemini 从最近对话里提取问题再作答；非空 → 直接回答该问题
+  // manual empty → let Gemini extract the question from recent conversation before answering; non-empty → answer that question directly
   window.api.generateAnswer({ reqId: state.reqId, question: manual, transcript });
 }
 
@@ -524,7 +543,7 @@ function updateCounter(text) {
   el.classList.toggle('over', n > max);
 }
 
-// ---------------- 资料 ----------------
+// ---------------- Documents ----------------
 async function refreshDocs(list) {
   const docs = list || (await window.api.listDocuments());
   const ul = $('docList');
@@ -556,7 +575,7 @@ async function refreshDocs(list) {
   });
 }
 
-// ---------------- 设置弹窗 ----------------
+// ---------------- Settings modal ----------------
 function openSettings() {
   const s = state.settings;
   $('setDeepgram').value = s.deepgramApiKey || '';
@@ -605,14 +624,14 @@ async function saveSettings() {
   toast('Settings saved');
 }
 
-// ---------------- 事件绑定 ----------------
+// ---------------- Event binding ----------------
 function bindEvents() {
   $('toggleBtn').onclick = () => (state.listening ? stopListening() : startListening());
   $('settingsBtn').onclick = openSettings;
   $('closeSettings').onclick = () => $('settingsModal').classList.add('hidden');
   $('saveSettings').onclick = saveSettings;
 
-  // 上传 / 清空 目标岗位 JD（保存时随设置一起持久化）
+  // Upload / clear the target job description (persisted together with settings on save)
   $('uploadJD').onclick = async () => {
     const r = await window.api.pickJD();
     if (!r) return;
@@ -670,7 +689,7 @@ function bindEvents() {
     toast('Added to Knowledge Base');
   };
 
-  // 转写语言切换：持久化；若正在监听则自动重连以立即生效
+  // Transcription language switch: persisted; if currently listening, automatically reconnects to take effect right away
   $('langSelect').onchange = async (e) => {
     const lang = e.target.value;
     state.settings = await window.api.saveSettings({ sttLanguage: lang });
@@ -685,15 +704,15 @@ function bindEvents() {
     }
   };
 
-  // 设备变化
+  // Device changes
   navigator.mediaDevices.addEventListener('devicechange', listInputDevices);
 
-  // 用户手动编辑问题框 → 不再视作自动识别值
+  // The user manually edited the question box → no longer treated as an auto-recognized value
   $('questionBox').addEventListener('input', () => {
     state.autoQuestion = '';
   });
 
-  // 自动作答开关
+  // Auto-answer toggle
   $('autoAnswer').onchange = async (e) => {
     state.settings = await window.api.saveSettings({ autoAnswer: e.target.checked });
     toast(
@@ -703,10 +722,10 @@ function bindEvents() {
     );
   };
 
-  // 全局热键
+  // Global hotkey
   window.api.onHotkeyGenerate(() => triggerGenerate());
 
-  // 生成事件流
+  // Generation event stream
   window.api.onAnswerStart(({ model, primary }) => {
     $('answer').textContent = '';
     updateCounter('');
@@ -714,11 +733,11 @@ function bindEvents() {
       toast(`${primary} is busy — answered with ${model} instead`);
     }
   });
-  // 识别到的问题：回填到「Current Question」框供查看/编辑
+  // The recognized question: filled back into the "Current Question" box for viewing/editing
   window.api.onAnswerQuestion(({ reqId, question }) => {
     if (reqId !== state.reqId || !question) return;
     const box = $('questionBox');
-    box.value = question; // 程序化赋值不会触发 input 事件
+    box.value = question; // A programmatic assignment doesn't fire an input event
     state.autoQuestion = question;
   });
   window.api.onAnswerChunk(({ reqId, delta }) => {
@@ -739,7 +758,7 @@ function bindEvents() {
   });
 }
 
-// ---------------- 启动 ----------------
+// ---------------- Startup ----------------
 async function init() {
   state.settings = await window.api.getSettings();
   renderHotkeyHint(state.settings.hotkey || 'Control+A');

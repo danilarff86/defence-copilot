@@ -1,7 +1,7 @@
 'use strict';
 
-// 跨 Provider 的通用层：错误类型 + 重试/兜底逻辑。
-// 具体的流式实现由各 Provider 的 generateAnswerStream 提供（gemini.js / openaiCompat.js）。
+// Cross-Provider common layer: error type + retry/fallback logic.
+// The concrete streaming implementation is provided by each provider's generateAnswerStream (gemini.js / openaiCompat.js).
 
 const TRANSIENT = new Set([429, 500, 502, 503, 504]);
 
@@ -16,9 +16,10 @@ class GenError extends Error {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
- * 按 models 顺序尝试；临时性错误(429/5xx)先重试，仍失败切下一个；
- * 一旦开始输出(onStart 已触发)就不再切换。
- * @param {function} opts.streamFn  provider 的 generateAnswerStream
+ * Try models in order; a transient error (429/5xx) is retried first, and only
+ * moves to the next model if it still fails; once output has started
+ * (onStart has fired) it no longer switches.
+ * @param {function} opts.streamFn  the provider's generateAnswerStream
  * @returns {Promise<{model:string, text:string}>}
  */
 async function generateWithFallback({ streamFn, models, retries = 1, onStart, ...rest }) {

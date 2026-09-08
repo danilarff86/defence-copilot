@@ -10,6 +10,7 @@ All notable changes to this project are documented here. Format loosely follows
 - **Windows & Linux support for running**: npm scripts are now cross-platform (`cross-env`), so `npm start` works on Windows (previously the `VAR=` prefix broke cmd). `make run` adapts to the OS — macOS builds & opens the signed app; Windows/Linux launch via `npm start`. Prebuilt `.exe` (Windows) and `.AppImage` (Linux) ship in Releases.
 
 ### Fixed
+- **System audio is now actually captured on macOS.** The Chromium shipped in Electron 33 had no macOS system-audio capture at all, so `getDisplayMedia` handed back a stream with no usable audio: on headphones the interviewer was never transcribed, and on speakers their speech reached only the microphone and was labelled **You**. The app now runs on Electron 44, whose Chromium captures system audio through Apple's CoreAudio Tap API (macOS 14.2+), and declares the `NSAudioCaptureUsageDescription` permission that API requires. The microphone also runs with echo cancellation so speaker output no longer bleeds into the candidate channel, and a system stream that arrives without an audio track now raises a visible error instead of silently degrading to mic-only.
 - System-audio capture without Screen Recording permission now fails quietly with a clear prompt instead of throwing `Failed to get sources` / `Video was requested…` unhandled rejections. When the permission is already denied, the app skips the capture attempt and guides you to grant it (continuing mic-only).
 
 ### Changed

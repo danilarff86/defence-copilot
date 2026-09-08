@@ -1,6 +1,7 @@
 'use strict';
 
-// 仅用于生成 README 截图：返回一段注入渲染进程的 JS，填充演示对话/问题/答案。
+// Only used to generate the README screenshot: returns a snippet of JS
+// injected into the renderer process that fills in a demo conversation/question/answer.
 function demoJs() {
   const sparkle =
     '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3z"/></svg>';

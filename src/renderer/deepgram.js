@@ -1,5 +1,5 @@
-// Deepgram 实时转写客户端：使用浏览器原生 WebSocket，
-// 通过子协议 ['token', apiKey] 鉴权（浏览器无法设置请求头）。
+// Deepgram real-time transcription client: uses the browser's native WebSocket,
+// authenticating via the subprotocol ['token', apiKey] (the browser can't set request headers).
 class DeepgramLive {
   /**
    * @param {object} opts

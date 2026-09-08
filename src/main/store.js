@@ -1,13 +1,16 @@
 'use strict';
 
-// 资料知识库：保存上传/粘贴文档的纯文本，作答时整体拼进上下文。
-// 持久化到 userData/knowledge.json —— 增/删/改/清空都会落盘，重启后仍在。
-// 不做向量检索；Flash/大模型上下文很大，面试资料直接喂即可。
+// Knowledge base: stores the plain text of uploaded/pasted documents and
+// splices all of it into the context when answering.
+// Persisted to userData/knowledge.json — add/remove/update/clear all write to
+// disk, so it survives a restart.
+// No vector retrieval: Flash and other large-context models have plenty of
+// room, so the interview material is fed in directly.
 
 const fs = require('fs');
 const path = require('path');
 
-// 在 Electron 主进程里能拿到 app；在纯 Node 单测里拿不到 → 自动退回内存模式（不落盘）。
+// The Electron main process has `app`; a plain Node unit test does not — fall back to in-memory mode (no disk writes) automatically.
 let app = null;
 try {
   app = require('electron').app;
@@ -17,7 +20,7 @@ try {
 const canPersist = () => !!(app && typeof app.getPath === 'function');
 const filePath = () => path.join(app.getPath('userData'), 'knowledge.json');
 
-let docs = null; // 懒加载： { id, name, text, chars }[]
+let docs = null; // Lazily loaded: { id, name, text, chars }[]
 let seq = 0;
 
 function ensureLoaded() {
@@ -35,7 +38,7 @@ function ensureLoaded() {
       }, 0);
     }
   } catch (_e) {
-    // 文件不存在 / 损坏 → 视为空库
+    // File missing / corrupted → treat as an empty knowledge base
   }
 }
 
@@ -57,7 +60,7 @@ function add(name, text) {
   return summary();
 }
 
-// 更新某条资料的名称/内容（删了重加也行，这个用于原地更新）
+// Update a document's name/content (remove-then-re-add also works; this one updates it in place)
 function update(id, { name, text } = {}) {
   ensureLoaded();
   const d = docs.find((x) => x.id === id);
@@ -92,7 +95,7 @@ function summary() {
 }
 
 /**
- * 拼出注入上下文的资料文本，超过上限则按比例截断。
+ * Assemble the document text to inject into the context, truncating it proportionally if it exceeds the cap.
  */
 function buildContext(maxChars = 60000) {
   ensureLoaded();
@@ -105,7 +108,7 @@ function buildContext(maxChars = 60000) {
   return joined;
 }
 
-// 仅供单测：重置内存状态
+// Unit tests only: reset the in-memory state
 function _reset() {
   docs = [];
   seq = 0;

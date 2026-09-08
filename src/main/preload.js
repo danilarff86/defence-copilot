@@ -3,11 +3,11 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-  // 设置
+  // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (partial) => ipcRenderer.invoke('save-settings', partial),
 
-  // 资料
+  // Documents
   pickDocuments: () => ipcRenderer.invoke('pick-documents'),
   listDocuments: () => ipcRenderer.invoke('list-documents'),
   removeDocument: (id) => ipcRenderer.invoke('remove-document', id),
@@ -15,16 +15,16 @@ contextBridge.exposeInMainWorld('api', {
   addTextDocument: (payload) => ipcRenderer.invoke('add-text-document', payload),
   pickJD: () => ipcRenderer.invoke('pick-jd'),
 
-  // 权限
+  // Permissions
   ensureMicPermission: () => ipcRenderer.invoke('ensure-mic-permission'),
   getScreenPermission: () => ipcRenderer.invoke('get-screen-permission'),
   openScreenSettings: () => ipcRenderer.invoke('open-screen-settings'),
 
-  // 生成答案
+  // Generate answer
   generateAnswer: (payload) => ipcRenderer.send('generate-answer', payload),
   cancelGenerate: () => ipcRenderer.send('cancel-generate'),
 
-  // 事件订阅
+  // Event subscriptions
   onHotkeyGenerate: (cb) => {
     const h = () => cb();
     ipcRenderer.on('hotkey-generate', h);

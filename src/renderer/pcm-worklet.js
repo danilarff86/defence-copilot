@@ -1,18 +1,18 @@
-// AudioWorklet：把麦克风/系统声音的 Float32 采样转成 16-bit PCM，
-// 累积到约 100ms 再 postMessage，降低消息频率。
+// AudioWorklet: converts Float32 samples from the microphone/system audio to
+// 16-bit PCM, buffering roughly 100ms before postMessage to cut message frequency.
 class PCMWorklet extends AudioWorkletProcessor {
   constructor() {
     super();
     this._buf = [];
     this._count = 0;
-    // sampleRate 是 AudioWorkletGlobalScope 的全局变量
+    // sampleRate is a global variable from AudioWorkletGlobalScope
     this._target = Math.max(1024, Math.floor(sampleRate * 0.1));
   }
 
   process(inputs) {
     const input = inputs[0];
     if (input && input[0]) {
-      const ch = input[0]; // Float32Array, 通常 128 个采样
+      const ch = input[0]; // Float32Array, typically 128 samples
       this._buf.push(ch.slice());
       this._count += ch.length;
 

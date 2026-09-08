@@ -4,6 +4,8 @@
 <dict>
   <key>NSMicrophoneUsageDescription</key>
   <string>Real Time Interview Copilot transcribes your microphone (the candidate) in real time.</string>
+  <key>NSAudioCaptureUsageDescription</key>
+  <string>Real Time Interview Copilot captures your computer's audio (the interviewer) so it can be transcribed.</string>
   <key>NSScreenCaptureUsageDescription</key>
   <string>Real Time Interview Copilot captures system audio (the interviewer) via screen-capture loopback.</string>
 </dict>
