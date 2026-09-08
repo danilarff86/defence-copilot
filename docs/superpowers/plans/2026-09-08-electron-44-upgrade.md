@@ -379,7 +379,20 @@ In `package.json`, under `devDependencies`, change the `electron` entry to:
 - [ ] **Step 4: Install**
 
 Run: `npm install`
-Expected: completes without an `EBADENGINE` error, and downloads the Electron 44 binary (this takes a while — it is a fresh ~100 MB download because Step 1 cleared the cache).
+Expected: completes without an `EBADENGINE` error.
+
+**This machine blocks npm install scripts** (an `allow-scripts` allowlist in the
+npm config), which silently prevents Electron's own postinstall from downloading
+the runtime binary — `npm install` finishes in seconds, reports success, and
+leaves `node_modules/electron/dist/` absent. Fetch the binary explicitly:
+
+```bash
+node node_modules/electron/install.js
+```
+
+Expected: a fresh ~100 MB download, because Step 1 cleared the cache. Any
+`npm install` in this repo needs this follow-up whenever the Electron version
+changes.
 
 - [ ] **Step 5: Verify the installed runtime is actually 44**
 
@@ -391,10 +404,24 @@ Expected: a `44.x.y` version string. Anything starting with `33.` means the inst
 Run:
 
 ```bash
-strings -a node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron\ Framework.framework/Versions/Current/Electron\ Framework | grep -c "MacCatapSystemAudioLoopbackCapture"
+strings -a node_modules/electron/dist/Electron.app/Contents/Frameworks/Electron\ Framework.framework/Versions/Current/Electron\ Framework | grep -c "CatapAudioInputStream"
 ```
 
-Expected: a count of **1 or more**. This is the check that proves the upgrade delivered what Electron 33 lacked — the same search returned zero on 33. A count of `0` means this Electron still cannot capture system audio and you must STOP and report it rather than proceeding to build.
+Expected: a count of **1 or more** (16 on Electron 44.2.0). This is the check that
+proves the upgrade delivered what Electron 33 lacked: `CatapAudioInputStream` is
+Chromium's CoreAudio Tap capture implementation, and the identical search against
+the Electron 33 binary returns **0**.
+
+Search for the implementation class, **not** for a feature-flag name. Flag names
+churn between Chromium releases — the community library that this project first
+copied names the feature `MacCatapSystemAudioLoopbackCapture`, which does not
+exist under that spelling in Electron 44; the real constant here is
+`kMacCatapLoopbackAudioForScreenShare`, and Electron's own v44 docs name it only
+in passing, as the flag you would *disable* to opt out of the working path. The
+class name is the stable signal.
+
+A count of `0` means this Electron cannot capture system audio: STOP and report
+it, and do not add feature flags as a workaround.
 
 - [ ] **Step 7: Run tests and lint**
 
