@@ -70,6 +70,7 @@
         }
       ],
       "extendInfo": {
+        "NSAudioCaptureUsageDescription": "Real Time Interview Copilot captures your computer's audio (the interviewer) so it can be transcribed.",
         "NSMicrophoneUsageDescription": "Real Time Interview Copilot transcribes your microphone (the candidate) in real time.",
         "NSScreenCaptureUsageDescription": "Real Time Interview Copilot captures system audio (the interviewer) via screen-capture loopback."
       }
@@ -97,5 +98,8 @@
   "dependencies": {
     "mammoth": "^1.8.0",
     "pdf-parse": "^1.1.1"
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
   }
 }
