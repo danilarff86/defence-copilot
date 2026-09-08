@@ -21,22 +21,6 @@ const gemini = require('./gemini');
 const openaiCompat = require('./openaiCompat');
 const prompt = require('./prompt');
 const { PROVIDERS } = require('./config');
-const { FEATURE_SWITCH, buildLoopbackFeatures } = require('./audioLoopback');
-
-// System-audio capture on macOS/Linux needs a Chromium feature flag, and it
-// must be set before app ready, so this runs at module top level immediately
-// rather than moving into whenReady().
-function applyLoopbackFeatureFlags() {
-  const merged = buildLoopbackFeatures({
-    platform: process.platform,
-    existing: app.commandLine.getSwitchValue(FEATURE_SWITCH),
-  });
-  if (!merged) return;
-  if (app.commandLine.hasSwitch(FEATURE_SWITCH)) app.commandLine.removeSwitch(FEATURE_SWITCH);
-  app.commandLine.appendSwitch(FEATURE_SWITCH, merged);
-}
-
-applyLoopbackFeatureFlags();
 
 // Resolve for the current Provider (the config.js registry): stream impl / Key / baseURL / model chain
 function resolveProvider(s) {
