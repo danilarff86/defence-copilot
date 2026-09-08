@@ -39,6 +39,104 @@ committed. Parts of it are deleted by Task 2 and parts are deliberately kept:
 
 ---
 
+### Task 0: Translate all source comments to English
+
+**Files:**
+- Modify: every file under `src/` and `test/` that contains a Chinese comment — currently `src/main/main.js`, `src/main/settings.js`, `src/main/store.js`, `src/main/documents.js`, `src/main/config.js`, `src/main/llm.js`, `src/main/gemini.js`, `src/main/openaiCompat.js`, `src/main/preload.js`, `src/main/prompt.js`, `src/main/_gifDemo.js`, `src/main/_screenshotDemo.js`, `src/main/audioLoopback.js`, `src/renderer/app.js`, `src/renderer/deepgram.js`, `src/renderer/pcm-worklet.js`, `src/renderer/index.html`, `test/llm.test.js`
+
+**Interfaces:**
+- Consumes: nothing.
+- Produces: a codebase whose comments are entirely English. Every later task writes English comments, and Task 2 locates code by identifier rather than by comment text because this task rewrites those comments.
+
+This task runs first so that no later task writes a comment that immediately
+needs translating, and so the diff for the Electron work is not tangled with a
+repo-wide comment rewrite.
+
+**Scope — comments ONLY.** Three kinds of Chinese text exist in this repo and
+only the first may be touched:
+
+| Kind | Example | Action |
+|---|---|---|
+| Comments — `//`, `/* */`, JSDoc, inline trailing, `<!-- -->` | `// 懒加载： { id, name, text, chars }[]` | **Translate** |
+| User-facing runtime strings | `throw new Error('缺少 Gemini API Key')`, `title: '选择岗位 JD 文件'` | **Leave unchanged** |
+| Functionally load-bearing Chinese | see the do-not-touch list below | **Leave unchanged** |
+
+**Do-not-touch list — changing any of these breaks behaviour or tests:**
+
+- `src/main/prompt.js:20` — `'请用中文作答。'`. This is the Chinese answer-language rule; it is written in the target language deliberately to prime the model's output language, and `test/prompt.test.js:58` asserts it verbatim.
+- `src/renderer/index.html` — the `中文` and `日本語` `<option>` labels (lines 56, 58, 309, 311, 327). These are UI labels naming languages in their own script.
+- `src/main/store.js:100` — `` `### 资料：${d.name}\n${d.text}` `` and `src/main/store.js:103` — `'\n\n[资料过长，已截断]'`. Both are injected into the LLM prompt, and `test/store.test.js:46` asserts `/已截断/`.
+- `test/prompt.test.js:21,22,58` and `test/store.test.js:46` — the assertion regexes `/大纲式/`, `/要点/`, `/请用中文作答。/`, `/已截断/`. These match product strings, not comments.
+- Every other string literal and template literal in the repo, including `console.error` messages, `dialog.showOpenDialog` titles, and file-filter names.
+
+- [ ] **Step 1: Record the current test baseline**
+
+Run: `npm test`
+Expected: PASS. Write down the exact totals line (`# tests N`, `# pass N`, `# fail 0`) — Step 4 must reproduce it exactly, since translating comments cannot change behaviour.
+
+- [ ] **Step 2: Translate the comments**
+
+Work file by file through the list above. For each file, find every comment with
+`grep -nP '[\x{4e00}-\x{9fff}]' <file>`, decide whether each hit is a comment or
+one of the protected categories, and rewrite only the comments in English.
+
+Preserve the author's intent and level of detail rather than shortening — these
+comments explain non-obvious decisions. For example, in `src/main/store.js`:
+
+```js
+// Knowledge base: stores the plain text of uploaded/pasted documents and
+// splices all of it into the context when answering.
+// Persisted to userData/knowledge.json — add/remove/update/clear all write to
+// disk, so it survives a restart.
+// No vector retrieval: Flash and other large-context models have plenty of
+// room, so the interview material is fed in directly.
+```
+
+and in `src/renderer/pcm-worklet.js`:
+
+```js
+const ch = input[0]; // Float32Array, typically 128 samples
+```
+
+Keep each comment on the same line as the code it annotates when it was a
+trailing comment, and keep block comments as block comments.
+
+- [ ] **Step 3: Verify no Chinese comment remains, and no protected string was touched**
+
+Run:
+
+```bash
+grep -rnP '[\x{4e00}-\x{9fff}]' src/ test/ | grep -P '(^|\s)(//|/\*|\*|<!--)'
+```
+
+Expected: **no output** — every remaining Chinese hit must be a string literal, not a comment.
+
+Then confirm the protected strings survived:
+
+```bash
+grep -c '请用中文作答' src/main/prompt.js && grep -c '已截断' src/main/store.js && grep -c '中文' src/renderer/index.html
+```
+
+Expected: `1`, `1`, and `3` respectively.
+
+- [ ] **Step 4: Verify behaviour is unchanged**
+
+Run: `npm test && npm run lint && npm run format:check`
+Expected: PASS, with the totals line **identical** to the baseline from Step 1. A changed test count means something other than a comment was edited.
+
+- [ ] **Step 5: Commit**
+
+This commit also carries the kept renderer changes from the superseded attempt
+(`echoCancellation: true` and the `getSystemStream` audio-track guard), which are
+currently uncommitted and are part of the fix.
+
+```bash
+git add -A src test
+git commit -m "refactor: translate source comments to English"
+```
+
+---
+
 ### Task 1: Enforce and add the system-audio Info.plist key
 
 **Files:**
@@ -178,8 +276,13 @@ rm src/main/audioLoopback.js test/audioLoopback.test.js
 
 - [ ] **Step 2: Remove the wiring from `main.js`**
 
-In `src/main/main.js`, delete these lines in full — the import, the comment
-block, the function, and the bare call (currently lines 24–38):
+**Locate this code by identifier, not by comment text.** Task 0 rewrote the
+comments in this block into English, so the Chinese shown below no longer matches
+the file. Find the block by searching for `applyLoopbackFeatureFlags` and
+`require('./audioLoopback')`, and delete the import, its explanatory comment
+(whatever language it is now in), the function, and the bare call — the whole
+run of lines from the `require('./audioLoopback')` line through
+`applyLoopbackFeatureFlags();` inclusive:
 
 ```js
 const { FEATURE_SWITCH, buildLoopbackFeatures } = require('./audioLoopback');
