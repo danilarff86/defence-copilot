@@ -57,7 +57,7 @@ Want **zero cloud**? Use **Ollama** as the answer provider (runs locally). A ful
 ## Requirements
 
 - **macOS 13+**, **Windows**, or **Linux** — runs on all three. Capturing the interviewer's audio needs **macOS 14.2+**; on macOS 13–14.1 use the [virtual-device fallback](#platform-support).
-- **Node.js ≥ 18** (Node 20 LTS recommended; see `.nvmrc`).
+- **Node.js ≥ 22.12** (see `.nvmrc`) — required by `@electron/packager`, which builds the macOS app.
 - API keys: [Deepgram](https://console.deepgram.com/) (STT, required) and at least one answer provider — [DeepSeek](https://platform.deepseek.com/) / [Gemini](https://aistudio.google.com/apikey) / [OpenAI](https://platform.openai.com/api-keys), or a local [Ollama](https://ollama.com/) install.
 
 ## Quick start

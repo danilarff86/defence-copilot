@@ -12,7 +12,7 @@ npm run lint       # ESLint
 npm run format     # Prettier (write)
 ```
 
-Use the Node version in [`.nvmrc`](.nvmrc) (`nvm use`). Node ≥ 18 is required.
+Use the Node version in [`.nvmrc`](.nvmrc) (`nvm use`). Node ≥ 22.12 is required — `@electron/packager` refuses to run below it, so packaging fails on older Node even though `npm install` only warns.
 
 ## Project layout
 

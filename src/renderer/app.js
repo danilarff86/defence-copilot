@@ -340,8 +340,10 @@ async function getSystemStream(value) {
       t.stop();
       stream.removeTrack(t);
     });
-    // No audio track means loopback didn't take effect (missing feature flag
-    // / missing Screen Recording permission).
+    // No audio track means the capture didn't take effect — most likely a
+    // missing permission. Electron reports nothing when a CoreAudio Tap fails,
+    // and getMediaAccessStatus has no media type for system audio, so this
+    // check is the app's only signal that it happened.
     // This must throw, or it silently falls back to mic-only and labels the
     // interviewer's speech as You.
     if (!stream.getAudioTracks().length) {

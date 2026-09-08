@@ -17,10 +17,23 @@ function plistUsageKeys() {
 }
 
 function builderUsageKeys() {
+  return Object.keys(builderUsageEntries()).sort();
+}
+
+// The descriptions themselves must match too, not just the key names: macOS
+// shows this text in the permission prompt, so a wording fix applied to only
+// one source gives the two builds different prompts for the same permission.
+function plistUsageEntries() {
+  const xml = fs.readFileSync(path.join(ROOT, 'extend-info.plist'), 'utf8');
+  const pairs = xml.matchAll(/<key>(NS\w*UsageDescription)<\/key>\s*<string>([\s\S]*?)<\/string>/g);
+  return Object.fromEntries([...pairs].map((m) => [m[1], m[2]]));
+}
+
+function builderUsageEntries() {
   const extendInfo = require(path.join(ROOT, 'package.json')).build.mac.extendInfo;
-  return Object.keys(extendInfo)
-    .filter((k) => /^NS\w*UsageDescription$/.test(k))
-    .sort();
+  return Object.fromEntries(
+    Object.entries(extendInfo).filter(([k]) => /^NS\w*UsageDescription$/.test(k)),
+  );
 }
 
 test('extend-info.plist declares the system-audio usage description', () => {
@@ -39,6 +52,10 @@ test('electron-builder config declares the system-audio usage description', () =
 
 test('both packaging paths declare the same usage-description keys', () => {
   assert.deepStrictEqual(plistUsageKeys(), builderUsageKeys());
+});
+
+test('both packaging paths use the same description text for every key', () => {
+  assert.deepStrictEqual(plistUsageEntries(), builderUsageEntries());
 });
 
 test('every usage description is a non-empty string', () => {
