@@ -9,6 +9,10 @@ test('DEFAULTS: answer length is the academic-prose budget', () => {
   assert.strictEqual(DEFAULTS.schemaVersion, SETTINGS_VERSION);
 });
 
+test('DEFAULTS: the sentence pause is long enough to survive a thinking pause', () => {
+  assert.strictEqual(DEFAULTS.sttPauseMs, 900);
+});
+
 test('migrate: a v1 file still on the old 500 default is lifted to the new default', () => {
   const out = migrate({ maxChars: 500, provider: 'gemini' });
   assert.strictEqual(out.maxChars, 1200);

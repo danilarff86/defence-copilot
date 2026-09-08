@@ -235,7 +235,10 @@ function handleTranscript(role, { text, isFinal }) {
 }
 
 // ---------------- Auto-answer (fires when a question is detected) ----------------
-const AUTO_DELAY_MS = 1300; // A pause this long from the interviewer ≈ they finished asking a question
+// A finalized turn already means the interviewer went quiet for sttPauseMs, so
+// this only guards against them starting a second sentence. Keep it short: it
+// stacks on top of that pause and both add to the time before an answer starts.
+const AUTO_DELAY_MS = 600;
 
 function scheduleAuto(role) {
   clearTimeout(state.autoTimer);
@@ -416,10 +419,12 @@ async function startListening() {
     }
 
     const lang = state.settings.sttLanguage || 'en-US';
+    const pauseMs = state.settings.sttPauseMs;
 
     state.dgMic = new window.DeepgramLive({
       apiKey: state.settings.deepgramApiKey,
       language: lang,
+      pauseMs,
       onTranscript: (r) => handleTranscript('interviewee', r),
       onState: (s, info) => onDgState('mic', s, info),
     });
@@ -431,6 +436,7 @@ async function startListening() {
       state.dgSys = new window.DeepgramLive({
         apiKey: state.settings.deepgramApiKey,
         language: lang,
+        pauseMs,
         onTranscript: (r) => handleTranscript('interviewer', r),
         onState: (s, info) => onDgState('sys', s, info),
       });
@@ -589,6 +595,7 @@ function openSettings() {
   $('setOllamaURL').value = s.ollamaBaseURL || 'http://localhost:11434/v1/chat/completions';
   $('setOllamaModel').value = s.ollamaModel || 'llama3.1';
   $('setSttLang').value = s.sttLanguage || 'en-US';
+  $('setSttPause').value = String(s.sttPauseMs || window.DeepgramLive.DEFAULT_PAUSE_MS);
   $('setAnswerLang').value = s.answerLanguage || 'auto';
   $('setMaxChars').value = s.maxChars || DEFAULT_MAX_CHARS;
   $('setHotkey').value = s.hotkey || 'Control+A';
@@ -610,6 +617,7 @@ async function saveSettings() {
     ollamaBaseURL: $('setOllamaURL').value.trim() || 'http://localhost:11434/v1/chat/completions',
     ollamaModel: $('setOllamaModel').value.trim() || 'llama3.1',
     sttLanguage: $('setSttLang').value,
+    sttPauseMs: parseInt($('setSttPause').value, 10) || window.DeepgramLive.DEFAULT_PAUSE_MS,
     answerLanguage: $('setAnswerLang').value,
     maxChars: parseInt($('setMaxChars').value, 10) || DEFAULT_MAX_CHARS,
     hotkey: $('setHotkey').value.trim() || 'Control+A',

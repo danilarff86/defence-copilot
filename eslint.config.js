@@ -82,4 +82,10 @@ module.exports = [
     },
     rules: baseRules,
   },
+  {
+    // Loaded as a plain script in the renderer, but also required by the unit
+    // tests, so it carries a guarded CommonJS export.
+    files: ['src/renderer/deepgram.js'],
+    languageOptions: { globals: { module: 'writable' } },
+  },
 ];
