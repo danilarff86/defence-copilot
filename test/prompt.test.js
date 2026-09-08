@@ -127,6 +127,19 @@ test('extraction prompt targets the committee question and keeps its contract', 
   assert.match(EXTRACTION_SYSTEM, /SAME language/);
 });
 
+test('extraction prompt demands a self-contained follow-up question', () => {
+  // A short follow-up ("why that one?") is useless in the Current Question
+  // box unless its antecedent is resolved, so the prompt must ask for that.
+  assert.match(EXTRACTION_SYSTEM, /SELF-CONTAINED/);
+  assert.match(EXTRACTION_SYSTEM, /resolve pronouns, ellipsis and back-references/);
+  assert.match(EXTRACTION_SYSTEM, /read on its own/);
+  // Resolution must not become licence to invent an antecedent.
+  assert.match(EXTRACTION_SYSTEM, /Never invent details/);
+  assert.match(EXTRACTION_SYSTEM, /leave the wording as it was spoken/);
+  // Still returns the follow-up, not the earlier question it resolves against.
+  assert.match(EXTRACTION_SYSTEM, /return that follow-up rather than the earlier question/);
+});
+
 test('buildExtractionUser embeds the transcript and the trailing cue', () => {
   assert.match(buildExtractionUser('Committee: hi'), /Committee: hi/);
   assert.match(buildExtractionUser('x'), /committee member's current core question is:/);
