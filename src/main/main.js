@@ -228,7 +228,10 @@ ipcMain.handle('pick-documents', async () => {
     title: 'Select interview materials (resume / JD / notes, etc.)',
     properties: ['openFile', 'multiSelections'],
     filters: [
-      { name: 'Documents', extensions: ['txt', 'md', 'markdown', 'pdf', 'docx', 'json', 'csv', 'log'] },
+      {
+        name: 'Documents',
+        extensions: ['txt', 'md', 'markdown', 'pdf', 'docx', 'json', 'csv', 'log'],
+      },
       { name: 'All Files', extensions: ['*'] },
     ],
   });
@@ -294,13 +297,17 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
   const q = (question || '').trim();
   const tr = (transcript || '').trim();
   if (!q && !tr) {
-    send('answer-error', { message: 'No dialogue detected. Start listening first, or type your question manually.' });
+    send('answer-error', {
+      message: 'No dialogue detected. Start listening first, or type your question manually.',
+    });
     return;
   }
 
   const prov = resolveProvider(currentSettings);
   if (prov.needsKey && !prov.apiKey) {
-    send('answer-error', { message: `${prov.label} API Key is not configured. Please set it in "Settings".` });
+    send('answer-error', {
+      message: `${prov.label} API Key is not configured. Please set it in "Settings".`,
+    });
     return;
   }
 
