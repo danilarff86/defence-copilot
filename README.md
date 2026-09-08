@@ -56,7 +56,7 @@ Want **zero cloud**? Use **Ollama** as the answer provider (runs locally). A ful
 
 ## Requirements
 
-- **macOS 13+**, **Windows**, or **Linux** — runs on all three; system-audio capture is most seamless on macOS (see [Platform support](#platform-support)).
+- **macOS 13+**, **Windows**, or **Linux** — runs on all three. Capturing the interviewer's audio needs **macOS 14.2+**; on macOS 13–14.1 use the [virtual-device fallback](#platform-support).
 - **Node.js ≥ 18** (Node 20 LTS recommended; see `.nvmrc`).
 - API keys: [Deepgram](https://console.deepgram.com/) (STT, required) and at least one answer provider — [DeepSeek](https://platform.deepseek.com/) / [Gemini](https://aistudio.google.com/apikey) / [OpenAI](https://platform.openai.com/api-keys), or a local [Ollama](https://ollama.com/) install.
 
@@ -107,7 +107,7 @@ After that it launches normally. (Building from source — `npm run package` —
 
 | Platform | Run it | Mic (candidate) | System audio (interviewer) |
 |---|---|---|---|
-| macOS 13+ | `make run` (builds & opens the app) or a `.dmg` | ✅ | ✅ Screen-Capture loopback — grant Screen Recording |
+| macOS 13+ | `make run` (builds & opens the app) or a `.dmg` | ✅ | ✅ on **macOS 14.2+** via CoreAudio Tap — grant **Screen & System Audio Recording**, and allow system-audio recording when macOS asks. macOS shows a screen-recording indicator even though only audio is captured. On macOS 13–14.1 use the virtual-device fallback below. |
 | Windows | `…Setup.exe`, or `npm install && npm start` / `make run` | ✅ | ✅ `getDisplayMedia` loopback (tick "share system audio") |
 | Linux | `.AppImage`, or `npm install && npm start` / `make run` | ✅ | ⚠️ no `getDisplayMedia` loopback — pick a PulseAudio/PipeWire **Monitor** source under **Interviewer audio** |
 
