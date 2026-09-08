@@ -320,6 +320,16 @@
               </select>
             </label>
             <label class="setting">
+              <span>Sentence pause</span>
+              <select id="setSttPause">
+                <option value="500">Short (0.5s) — snappy, splits more</option>
+                <option value="900">Normal (0.9s)</option>
+                <option value="1500">Long (1.5s) — for slower speakers</option>
+              </select>
+            </label>
+          </div>
+          <div class="setting-row">
+            <label class="setting">
               <span>Answer language</span>
               <select id="setAnswerLang">
                 <option value="auto">Follow question</option>
@@ -328,12 +338,12 @@
                 <option value="uk">Українська</option>
               </select>
             </label>
-          </div>
-          <div class="setting-row">
             <label class="setting">
               <span>Max characters</span>
               <input type="number" id="setMaxChars" min="50" max="2000" />
             </label>
+          </div>
+          <div class="setting-row">
             <label class="setting">
               <span>Trigger hotkey</span>
               <input type="text" id="setHotkey" placeholder="Control+A" />

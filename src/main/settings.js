@@ -20,6 +20,10 @@ const DEFAULTS = {
   ollamaModel: 'llama3.1',
   // Transcription language: zh / en-US / multi
   sttLanguage: 'en-US',
+  // Silence (ms) that ends a spoken sentence. Too low and one sentence is split
+  // into several turns, which garbles the question handed to the LLM.
+  // 500 = short / 900 = normal / 1500 = long. Keep in sync with the renderer.
+  sttPauseMs: 900,
   // Generation model (editable — put in any Flash model ID your account can use)
   genModel: 'gemini-2.5-flash',
   // Max characters of document material injected into the context
