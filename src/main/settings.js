@@ -9,7 +9,7 @@ const SETTINGS_VERSION = 2;
 
 const DEFAULTS = {
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
-  // Answer Provider: deepseek / gemini / openai / ollama
+  // Answer Provider: deepseek / gemini / openai / ollama / anthropic
   provider: 'gemini',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
   deepseekApiKey: process.env.DEEPSEEK_API_KEY || '',
@@ -18,13 +18,15 @@ const DEFAULTS = {
   openaiModel: 'gpt-4o-mini',
   ollamaBaseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1/chat/completions',
   ollamaModel: 'llama3.1',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+  anthropicModel: 'claude-opus-5',
   // Transcription language: zh / en-US / multi
   sttLanguage: 'en-US',
   // Silence (ms) that ends a spoken sentence. Too low and one sentence is split
   // into several turns, which garbles the question handed to the LLM.
   // 500 = short / 900 = normal / 1500 = long. Keep in sync with the renderer.
   sttPauseMs: 900,
-  // Generation model (editable — put in any Flash model ID your account can use)
+  // Gemini model (chosen in the main window's model picker)
   genModel: 'gemini-2.5-flash',
   // Max characters of document material injected into the context
   maxContextChars: 60000,

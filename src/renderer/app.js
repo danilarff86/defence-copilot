@@ -581,19 +581,51 @@ async function refreshDocs(list) {
   });
 }
 
+// ---------------- Model picker ----------------
+let modelListSeq = 0;
+
+// Fills the top-bar model dropdown for the current provider. A newer call (e.g. after
+// switching provider in Settings) supersedes an older one still waiting on the network.
+async function loadModels(force = false) {
+  const seq = ++modelListSeq;
+  const sel = $('modelSelect');
+  sel.disabled = true;
+  let r;
+  try {
+    r = await window.api.listModels({ force });
+  } catch (e) {
+    if (seq === modelListSeq) toast('Couldn’t load models: ' + e.message, true);
+    return null;
+  }
+  if (seq !== modelListSeq) return null;
+  sel.textContent = '';
+  for (const id of r.models) {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = id;
+    sel.appendChild(opt);
+  }
+  sel.value = r.current;
+  sel.disabled = false;
+  sel.title =
+    r.source === 'live' ? `${r.models.length} models available` : `Built-in list — ${r.error}`;
+  if (force) {
+    if (r.source === 'live') toast('Model list refreshed');
+    else toast(`Couldn’t refresh models: ${r.error}`, true);
+  }
+  return r;
+}
+
 // ---------------- Settings modal ----------------
 function openSettings() {
   const s = state.settings;
   $('setDeepgram').value = s.deepgramApiKey || '';
   $('setProvider').value = s.provider || 'gemini';
   $('setDeepseek').value = s.deepseekApiKey || '';
-  $('setDeepseekModel').value = s.deepseekModel || 'deepseek-chat';
   $('setGemini').value = s.geminiApiKey || '';
-  $('setModel').value = s.genModel || 'gemini-2.5-flash';
   $('setOpenai').value = s.openaiApiKey || '';
-  $('setOpenaiModel').value = s.openaiModel || 'gpt-4o-mini';
+  $('setAnthropic').value = s.anthropicApiKey || '';
   $('setOllamaURL').value = s.ollamaBaseURL || 'http://localhost:11434/v1/chat/completions';
-  $('setOllamaModel').value = s.ollamaModel || 'llama3.1';
   $('setSttLang').value = s.sttLanguage || 'en-US';
   $('setSttPause').value = String(s.sttPauseMs || window.DeepgramLive.DEFAULT_PAUSE_MS);
   $('setAnswerLang').value = s.answerLanguage || 'auto';
@@ -609,13 +641,10 @@ async function saveSettings() {
     deepgramApiKey: $('setDeepgram').value.trim(),
     provider: $('setProvider').value,
     deepseekApiKey: $('setDeepseek').value.trim(),
-    deepseekModel: $('setDeepseekModel').value.trim() || 'deepseek-chat',
     geminiApiKey: $('setGemini').value.trim(),
-    genModel: $('setModel').value.trim() || 'gemini-2.5-flash',
     openaiApiKey: $('setOpenai').value.trim(),
-    openaiModel: $('setOpenaiModel').value.trim() || 'gpt-4o-mini',
+    anthropicApiKey: $('setAnthropic').value.trim(),
     ollamaBaseURL: $('setOllamaURL').value.trim() || 'http://localhost:11434/v1/chat/completions',
-    ollamaModel: $('setOllamaModel').value.trim() || 'llama3.1',
     sttLanguage: $('setSttLang').value,
     sttPauseMs: parseInt($('setSttPause').value, 10) || window.DeepgramLive.DEFAULT_PAUSE_MS,
     answerLanguage: $('setAnswerLang').value,
@@ -625,6 +654,7 @@ async function saveSettings() {
     jobDescription: $('setJD').value,
   };
   state.settings = await window.api.saveSettings(partial);
+  loadModels();
   renderHotkeyHint(state.settings.hotkey);
   $('langSelect').value = state.settings.sttLanguage || 'en-US';
   $('settingsModal').classList.add('hidden');
@@ -712,6 +742,13 @@ function bindEvents() {
     }
   };
 
+  // Model picker: saved as the current provider's model; takes effect on the next answer
+  $('modelSelect').onchange = async (e) => {
+    state.settings = await window.api.selectModel(e.target.value);
+    toast(`Model → ${e.target.value}`);
+  };
+  $('modelRefresh').onclick = () => loadModels(true);
+
   // Device changes
   navigator.mediaDevices.addEventListener('devicechange', listInputDevices);
 
@@ -777,7 +814,8 @@ async function init() {
   bindEvents();
   await listInputDevices();
   await refreshDocs();
-  if (!state.settings.deepgramApiKey || !state.settings.geminiApiKey) {
+  const modelList = await loadModels();
+  if (!state.settings.deepgramApiKey || (modelList && modelList.missingKey)) {
     setStatus('Configure API keys');
     openSettings();
   }

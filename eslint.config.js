@@ -24,9 +24,12 @@ const timers = {
 
 const webApis = {
   fetch: 'readonly',
+  Response: 'readonly',
+  ReadableStream: 'readonly',
   TextDecoder: 'readonly',
   TextEncoder: 'readonly',
   AbortController: 'readonly',
+  AbortSignal: 'readonly',
   URL: 'readonly',
   URLSearchParams: 'readonly',
   WebSocket: 'readonly',

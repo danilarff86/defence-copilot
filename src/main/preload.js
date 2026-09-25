@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('api', {
   // Settings
   getSettings: () => ipcRenderer.invoke('get-settings'),
   saveSettings: (partial) => ipcRenderer.invoke('save-settings', partial),
+  listModels: (opts) => ipcRenderer.invoke('list-models', opts),
+  selectModel: (model) => ipcRenderer.invoke('select-model', model),
 
   // Documents
   pickDocuments: () => ipcRenderer.invoke('pick-documents'),

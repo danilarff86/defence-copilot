@@ -17,28 +17,9 @@ const settingsStore = require('./settings');
 const store = require('./store');
 const docs = require('./documents');
 const llm = require('./llm');
-const gemini = require('./gemini');
-const openaiCompat = require('./openaiCompat');
 const prompt = require('./prompt');
-const { PROVIDERS } = require('./config');
-
-// Resolve for the current Provider (the config.js registry): stream impl / Key / baseURL / model chain
-function resolveProvider(s) {
-  const id = s.provider && PROVIDERS[s.provider] ? s.provider : 'gemini';
-  const p = PROVIDERS[id];
-  const model = ((s[p.modelField] || '') + '').trim() || p.defaultModel;
-  const models = [model, ...(p.fallbacks || [])].filter((m, i, a) => a.indexOf(m) === i);
-  return {
-    id,
-    label: p.label,
-    type: p.type,
-    needsKey: !!p.keyField,
-    apiKey: p.keyField ? s[p.keyField] || '' : '',
-    baseURL: p.baseURLField ? s[p.baseURLField] || p.baseURL : p.baseURL,
-    models,
-    streamFn: p.type === 'gemini' ? gemini.generateAnswerStream : openaiCompat.generateAnswerStream,
-  };
-}
+const { resolveProvider, modelSetting, tokenBudgets } = require('./config');
+const models = require('./models');
 
 // Fix the app name so a dev run and the packaged .app share the same userData/settings.json
 app.setName('interview-copilot');
@@ -217,6 +198,17 @@ ipcMain.handle('save-settings', (_e, partial) => {
   return currentSettings;
 });
 
+// Model picker: list the current provider's models / store the chosen one as that provider's model
+ipcMain.handle('list-models', (_e, opts) =>
+  models.listModels(currentSettings, { force: !!(opts && opts.force) }),
+);
+
+ipcMain.handle('select-model', (_e, model) => {
+  const partial = modelSetting(currentSettings, model);
+  if (partial) currentSettings = settingsStore.save(partial);
+  return currentSettings;
+});
+
 ipcMain.handle('list-documents', () => store.summary());
 
 ipcMain.handle('remove-document', (_e, id) => store.remove(id));
@@ -333,22 +325,10 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
     jobDescription: currentSettings.jobDescription || '',
   });
 
-  // Output token ceiling.
-  // - OpenAI-compatible providers (including DeepSeek/Ollama) may be
-  //   "reasoning models": max_tokens must also cover the hidden thinking
-  //   chain, and too small a budget leaves the answer empty, so this is
-  //   generous and answer length is controlled by the prompt instead (the
-  //   thinking chain is never shown to the user).
-  // - Gemini already has thinking disabled (thinkingBudget=0), so this can be
-  //   tightened against the character cap as a length backstop.
-  const maxChars = currentSettings.maxChars || 500;
-  const lang = currentSettings.answerLanguage || 'auto';
-  const perChar = lang === 'en' ? 0.5 : 1.1;
-  const maxOutputTokens =
-    prov.type === 'openai'
-      ? 4096
-      : Math.min(4096, Math.max(160, Math.ceil(maxChars * perChar * 1.15)));
-  const extractTokens = prov.type === 'openai' ? 1024 : 80;
+  const { answer: maxOutputTokens, extract: extractTokens } = tokenBudgets(prov.type, {
+    maxChars: currentSettings.maxChars || 500,
+    answerLanguage: currentSettings.answerLanguage || 'auto',
+  });
 
   const common = {
     streamFn: prov.streamFn,

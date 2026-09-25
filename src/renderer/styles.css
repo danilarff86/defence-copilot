@@ -52,6 +52,7 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 .brand-icon {
   width: 40px;
@@ -94,20 +95,50 @@ button {
   background: var(--danger);
 }
 
+/* The controls shrink (selects truncate) rather than pushing the buttons off-screen */
 .controls {
   display: flex;
   align-items: flex-end;
+  justify-content: flex-end;
   gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.controls > .btn {
+  flex-shrink: 0;
 }
 .field {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  flex: 0 1 auto;
+  min-width: 80px;
+}
+.controls select {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+/* Narrow windows: drop the app title (status stays) to give the selects room */
+@media (max-width: 1180px) {
+  .brand-title {
+    display: none;
+  }
 }
 .field > span {
   font-size: 11px;
   color: var(--muted);
   padding-left: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.controls .model-select {
+  max-width: 240px;
+}
+.setting em {
+  font-style: normal;
+  color: var(--muted);
 }
 select {
   appearance: none;

@@ -4,11 +4,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-lightgrey)
 ![Node](https://img.shields.io/badge/node-%E2%89%A518-brightgreen)
-[![Providers](https://img.shields.io/badge/LLM-DeepSeek%20%7C%20Gemini%20%7C%20OpenAI%20%7C%20Ollama-c15a37)](#features)
+[![Providers](https://img.shields.io/badge/LLM-DeepSeek%20%7C%20Gemini%20%7C%20OpenAI%20%7C%20Anthropic%20%7C%20Ollama-c15a37)](#features)
 
 **Hear the interviewer's question and draft your answer — live, and entirely on your machine.** Built for interview practice, mock interviews, and self-review.
 
-> Real-time interview assistant — live dual-channel transcription (Deepgram) + LLM answers (DeepSeek / Gemini / OpenAI / Ollama), grounded in your own documents.
+> Real-time interview assistant — live dual-channel transcription (Deepgram) + LLM answers (DeepSeek / Gemini / OpenAI / Anthropic / Ollama), grounded in your own documents.
 
 A single-window Electron desktop app. It listens to a conversation, separates **you (microphone)** from the **interviewer (system audio)**, and on a hotkey detects the interviewer's current question and drafts a concise, first-person answer — using the last ~15 turns of dialogue plus any documents you upload as context.
 
@@ -36,7 +36,7 @@ Using real-time answer generation during a **live** interview without the other 
 This app sends data to third-party APIs **only for the providers you configure**:
 
 - **Audio** (microphone + captured system audio) is streamed to **Deepgram** for transcription.
-- **Transcripts, your question, and uploaded document text** are sent to your chosen **answer provider** (DeepSeek / Gemini / OpenAI) to generate answers.
+- **Transcripts, your question, and uploaded document text** are sent to your chosen **answer provider** (DeepSeek / Gemini / OpenAI / Anthropic) to generate answers.
 - API keys are stored **locally only**, in `app.getPath('userData')/settings.json` (e.g. `~/Library/Application Support/interview-copilot/settings.json` on macOS). They are never committed to the repo or sent anywhere except the provider's own API.
 
 Want **zero cloud**? Use **Ollama** as the answer provider (runs locally). A fully local STT option (Whisper) is on the [roadmap](#roadmap).
@@ -50,7 +50,7 @@ Want **zero cloud**? Use **Ollama** as the answer provider (runs locally). A ful
 - ⚡ **Auto-answer (optional)** — flip the toggle and it answers on its own as soon as the interviewer finishes a question, no keypress needed.
 - 🧠 **Context-aware** — answers are grounded in the last ~15 turns of dialogue + your uploaded résumé / JD / notes (a persistent Knowledge Base you can add to, update, and clear).
 - 🎯 **JD customization** — paste or upload a job description in Settings; it's persisted and tailors every answer to the target role.
-- 🔌 **Switchable providers** — DeepSeek, Gemini, OpenAI, or local Ollama, with automatic retry + model fallback.
+- 🔌 **Switchable providers** — DeepSeek, Gemini, OpenAI, Anthropic, or local Ollama — pick the model from the main window.
 - ✍️ **Spoken academic prose** — answers are continuous sentences (roughly 3–8, default ceiling 1200 chars), never bullet lists, grounded in your uploaded materials with figures, formulas and terminology reproduced verbatim; shown alongside the detected question so you can edit and regenerate.
 - 🖥️ **Single, clean UI** — live transcript on the left; question / answer / knowledge base on the right.
 
@@ -58,7 +58,7 @@ Want **zero cloud**? Use **Ollama** as the answer provider (runs locally). A ful
 
 - **macOS 13+**, **Windows**, or **Linux** — runs on all three. Capturing the interviewer's audio needs **macOS 14.2+**; on macOS 13–14.1 use the [virtual-device fallback](#platform-support).
 - **Node.js ≥ 22.12** (see `.nvmrc`) — required by `@electron/packager`, which builds the macOS app.
-- API keys: [Deepgram](https://console.deepgram.com/) (STT, required) and at least one answer provider — [DeepSeek](https://platform.deepseek.com/) / [Gemini](https://aistudio.google.com/apikey) / [OpenAI](https://platform.openai.com/api-keys), or a local [Ollama](https://ollama.com/) install.
+- API keys: [Deepgram](https://console.deepgram.com/) (STT, required) and at least one answer provider — [DeepSeek](https://platform.deepseek.com/) / [Gemini](https://aistudio.google.com/apikey) / [OpenAI](https://platform.openai.com/api-keys) / [Anthropic](https://console.anthropic.com/settings/keys), or a local [Ollama](https://ollama.com/) install.
 
 ## Quick start
 
@@ -127,6 +127,8 @@ src/
     prompt.js           prompt builders (answer + question extraction) — pure, tested
     llm.js              provider-agnostic retry + fallback
     gemini.js           Gemini REST (SSE)
+    anthropic.js        Anthropic Messages API (SSE)
+    models.js           model picker lists (live + curated fallback)
     openaiCompat.js     OpenAI-compatible client (DeepSeek / OpenAI / Ollama)
     store.js            knowledge base (context stuffing)
     documents.js        txt/md/pdf/docx parsing + chunking
@@ -168,7 +170,7 @@ If Real Time Interview Copilot is useful to you, please **⭐ star the repo** �
 
 ## 中文
 
-基于 **Deepgram**（实时转写）+ **DeepSeek / Gemini / OpenAI / Ollama**（答案生成）的桌面应用：双声道识别（麦克风=面试者、系统声音=面试官），按 `Ctrl+A` 自动识别面试官当前的问题，并结合最近约 15 轮对话 + 你上传的资料，生成第一人称的学术口语化答案（连贯成段，不用要点列表；默认上限 1200 字符），数字、公式与术语严格照搬资料原文。
+基于 **Deepgram**（实时转写）+ **DeepSeek / Gemini / OpenAI / Anthropic / Ollama**（答案生成）的桌面应用：双声道识别（麦克风=面试者、系统声音=面试官），按 `Ctrl+A` 自动识别面试官当前的问题，并结合最近约 15 轮对话 + 你上传的资料，生成第一人称的学术口语化答案（连贯成段，不用要点列表；默认上限 1200 字符），数字、公式与术语严格照搬资料原文。
 
 **⚠️ 免责声明**：本工具用于**面试练习、复盘、模拟面试与无障碍辅助**。在**真实面试**中未经对方知情使用实时答题，可能违反对方公司政策、协议、学术诚信规则或当地法律，且通常被视为不诚信行为。**如何使用、是否合规由你自行负责**，作者不为此背书，软件按「现状」提供、不附带任何担保。
 
