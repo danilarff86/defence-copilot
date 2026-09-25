@@ -195,7 +195,20 @@
               </svg>
               <span>Answer</span>
             </div>
-            <span id="charCounter" class="counter">0 / 500 chars</span>
+            <div class="answer-meta">
+              <label class="length-control" title="How long the next answer should be">
+                <input
+                  type="range"
+                  id="answerLength"
+                  min="0"
+                  max="3"
+                  step="1"
+                  aria-label="Answer length"
+                />
+                <span id="answerLengthLabel" class="length-label">Standard</span>
+              </label>
+              <span id="charCounter" class="counter">0 / 1200 chars</span>
+            </div>
           </div>
           <div class="card-body answer-body">
             <div id="answer" class="answer" placeholder="Your answer will appear here…"></div>
@@ -331,10 +344,6 @@
                 <option value="zh">中文</option>
                 <option value="uk">Українська</option>
               </select>
-            </label>
-            <label class="setting">
-              <span>Max characters</span>
-              <input type="number" id="setMaxChars" min="50" max="2000" />
             </label>
           </div>
           <div class="setting-row">

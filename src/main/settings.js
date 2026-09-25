@@ -3,9 +3,10 @@
 const fs = require('fs');
 const path = require('path');
 const { app } = require('electron');
+const { DEFAULT_LEVEL, levelFromMaxChars } = require('./verbosity');
 
 // Bump when a stored settings value needs a one-time migration; see migrate().
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
 
 const DEFAULTS = {
   deepgramApiKey: process.env.DEEPGRAM_API_KEY || '',
@@ -34,8 +35,8 @@ const DEFAULTS = {
   hotkey: 'Control+A',
   // Auto-answer: fires automatically once the interviewer's question is detected as finished (no hotkey press needed)
   autoAnswer: false,
-  // Answer character cap (a hard upper bound, not a target length; academic prose needs a larger budget)
-  maxChars: 1200,
+  // Answer length level (index into LEVELS in verbosity.js), set by the Answer card slider
+  answerLength: DEFAULT_LEVEL,
   // Answer language: auto (follows the question) / zh / en
   answerLanguage: 'auto',
   // Interview background and answering style (injected into the system prompt, highest priority)
@@ -60,7 +61,12 @@ function migrate(saved) {
   // v1 → v2: answers were outline-style and capped at 500 characters.
   // Academic prose needs a larger budget, so lift the old default. A value
   // the user chose themselves is left alone.
-  if (from < 2 && out.maxChars === 500) out.maxChars = DEFAULTS.maxChars;
+  if (from < 2 && out.maxChars === 500) out.maxChars = 1200;
+  // v2 → v3: the free-form character cap became a length level (slider).
+  if (from < 3 && 'maxChars' in out) {
+    out.answerLength = levelFromMaxChars(out.maxChars);
+    delete out.maxChars;
+  }
   out.schemaVersion = SETTINGS_VERSION;
   return out;
 }

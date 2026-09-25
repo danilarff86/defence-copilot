@@ -20,6 +20,7 @@ const llm = require('./llm');
 const prompt = require('./prompt');
 const { resolveProvider, modelSetting, tokenBudgets } = require('./config');
 const models = require('./models');
+const { lengthLevel } = require('./verbosity');
 
 // Fix the app name so a dev run and the packaged .app share the same userData/settings.json
 app.setName('interview-copilot');
@@ -314,19 +315,20 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
   const controller = new AbortController();
   activeGen = { id: reqId, controller };
 
+  const length = lengthLevel(currentSettings.answerLength);
   const context = store.buildContext(currentSettings.maxContextChars || 60000);
   const { systemInstruction, userText } = prompt.buildPrompt({
     question: q,
     transcript: tr,
     context,
     answerLanguage: currentSettings.answerLanguage || 'auto',
-    maxChars: currentSettings.maxChars || 500,
+    length,
     profile: currentSettings.interviewProfile || '',
     jobDescription: currentSettings.jobDescription || '',
   });
 
   const { answer: maxOutputTokens, extract: extractTokens } = tokenBudgets(prov.type, {
-    maxChars: currentSettings.maxChars || 500,
+    maxChars: length.maxChars,
     answerLanguage: currentSettings.answerLanguage || 'auto',
   });
 

@@ -2,8 +2,26 @@
 
 const $ = (id) => document.getElementById(id);
 
-// Keep in sync with DEFAULTS.maxChars in src/main/settings.js.
-const DEFAULT_MAX_CHARS = 1200;
+// Mirror of LEVELS in src/main/verbosity.js (names and character caps only);
+// test/verbosity.test.js fails if the two drift apart.
+const ANSWER_LENGTHS = [
+  { name: 'Terse', maxChars: 300 },
+  { name: 'Brief', maxChars: 600 },
+  { name: 'Standard', maxChars: 1200 },
+  { name: 'Detailed', maxChars: 2000 },
+];
+const DEFAULT_ANSWER_LENGTH = 2;
+
+function answerLength() {
+  const n = state.settings ? state.settings.answerLength : undefined;
+  return Number.isInteger(n) && ANSWER_LENGTHS[n] ? n : DEFAULT_ANSWER_LENGTH;
+}
+
+function renderAnswerLength() {
+  const n = answerLength();
+  $('answerLength').value = String(n);
+  $('answerLengthLabel').textContent = ANSWER_LENGTHS[n].name;
+}
 
 const state = {
   listening: false,
@@ -543,7 +561,7 @@ function endGenerate() {
 
 function updateCounter(text) {
   const n = charCount(text);
-  const max = state.settings ? state.settings.maxChars || DEFAULT_MAX_CHARS : DEFAULT_MAX_CHARS;
+  const max = ANSWER_LENGTHS[answerLength()].maxChars;
   const el = $('charCounter');
   el.textContent = `${n} / ${max} chars`;
   el.classList.toggle('over', n > max);
@@ -629,7 +647,6 @@ function openSettings() {
   $('setSttLang').value = s.sttLanguage || 'en-US';
   $('setSttPause').value = String(s.sttPauseMs || window.DeepgramLive.DEFAULT_PAUSE_MS);
   $('setAnswerLang').value = s.answerLanguage || 'auto';
-  $('setMaxChars').value = s.maxChars || DEFAULT_MAX_CHARS;
   $('setHotkey').value = s.hotkey || 'Control+A';
   $('setProfile').value = s.interviewProfile || '';
   $('setJD').value = s.jobDescription || '';
@@ -648,7 +665,6 @@ async function saveSettings() {
     sttLanguage: $('setSttLang').value,
     sttPauseMs: parseInt($('setSttPause').value, 10) || window.DeepgramLive.DEFAULT_PAUSE_MS,
     answerLanguage: $('setAnswerLang').value,
-    maxChars: parseInt($('setMaxChars').value, 10) || DEFAULT_MAX_CHARS,
     hotkey: $('setHotkey').value.trim() || 'Control+A',
     interviewProfile: $('setProfile').value,
     jobDescription: $('setJD').value,
@@ -658,7 +674,6 @@ async function saveSettings() {
   renderHotkeyHint(state.settings.hotkey);
   $('langSelect').value = state.settings.sttLanguage || 'en-US';
   $('settingsModal').classList.add('hidden');
-  updateCounter($('answer').textContent);
   toast('Settings saved');
 }
 
@@ -749,6 +764,18 @@ function bindEvents() {
   };
   $('modelRefresh').onclick = () => loadModels(true);
 
+  // Answer length slider: label and counter follow while dragging; saved on release
+  // and takes effect on the next answer (one already streaming keeps its length)
+  $('answerLength').oninput = (e) => {
+    const n = parseInt(e.target.value, 10);
+    $('answerLengthLabel').textContent = ANSWER_LENGTHS[n].name;
+    state.settings = { ...state.settings, answerLength: n };
+    updateCounter($('answer').textContent);
+  };
+  $('answerLength').onchange = async (e) => {
+    state.settings = await window.api.saveSettings({ answerLength: parseInt(e.target.value, 10) });
+  };
+
   // Device changes
   navigator.mediaDevices.addEventListener('devicechange', listInputDevices);
 
@@ -809,6 +836,7 @@ async function init() {
   renderHotkeyHint(state.settings.hotkey || 'Control+A');
   $('autoAnswer').checked = !!state.settings.autoAnswer;
   $('langSelect').value = state.settings.sttLanguage || 'en-US';
+  renderAnswerLength();
   showEmptyState();
   updateCounter('');
   bindEvents();
