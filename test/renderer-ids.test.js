@@ -25,3 +25,17 @@ test('model picker and Anthropic settings are present; per-provider model inputs
     assert.doesNotMatch(html, new RegExp(`id="${id}"`));
   }
 });
+
+test('answer length slider lives in the Answer card; the Settings char cap is gone', () => {
+  const html = fs.readFileSync(path.join(RENDERER, 'index.html'), 'utf8');
+  const card = html.slice(
+    html.indexOf('class="card answer-card"'),
+    html.indexOf('class="card docs-card"'),
+  );
+  assert.match(
+    card,
+    /<input[^>]*type="range"[^>]*id="answerLength"|id="answerLength"[^>]*type="range"/,
+  );
+  assert.match(card, /id="answerLengthLabel"/);
+  assert.doesNotMatch(html, /id="setMaxChars"/);
+});

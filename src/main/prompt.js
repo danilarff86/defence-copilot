@@ -8,7 +8,7 @@ function buildPrompt({
   transcript,
   context,
   answerLanguage,
-  maxChars,
+  length,
   profile,
   jobDescription,
 }) {
@@ -24,12 +24,14 @@ function buildPrompt({
           ? 'Відповідай українською мовою.'
           : 'Answer in the same language the question was asked in.';
 
+  const [minSentences, maxSentences] = length.sentences;
+
   const lines = [
     'You are the PhD candidate defending your own dissertation before an examination committee.',
     "You will be given a committee member's question, a recent transcript of the session, and excerpts from your own dissertation materials.",
     'Answer in the first person, as if speaking aloud to the committee, in an academic but natural spoken register.',
     'Rules:',
-    `1) Write FLOWING PROSE — continuous sentences that read as speech. NEVER use bullet points, dashes as list markers, numbered lists, headings or any outline structure. Aim for about 3-8 sentences; ${maxChars} characters is a hard upper bound, not a target.`,
+    `1) Write FLOWING PROSE — continuous sentences that read as speech. NEVER use bullet points, dashes as list markers, numbered lists, headings or any outline structure. Aim for about ${minSentences}-${maxSentences} sentences; ${length.maxChars} characters is a hard upper bound, not a target.`,
     '2) Open with the direct answer to the question. No preamble, no "good question", no restating or summarising the question, no title such as "My answer".',
     '3) The dissertation excerpts are the primary and authoritative source of facts about this work. Reproduce numerical values, formulas, algorithm names, constraints, experimental conditions and stated conclusions EXACTLY as they appear in the excerpts — never paraphrase, round or approximate them.',
     '4) If the excerpts do not cover part of the question, you may add general knowledge from the subject area, but say explicitly that it is general background and not a result of this dissertation.',

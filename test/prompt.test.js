@@ -3,13 +3,14 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { buildPrompt, EXTRACTION_SYSTEM, buildExtractionUser } = require('../src/main/prompt');
+const { LEVELS } = require('../src/main/verbosity');
 
 const BASE = {
   question: 'q',
   transcript: '',
   context: '',
   answerLanguage: 'en',
-  maxChars: 1200,
+  length: LEVELS[2],
 };
 
 test('buildPrompt: asks for flowing prose and forbids lists', () => {
@@ -22,9 +23,15 @@ test('buildPrompt: asks for flowing prose and forbids lists', () => {
   assert.doesNotMatch(systemInstruction, /要点/);
 });
 
-test('buildPrompt: maxChars is stated as a hard upper bound, not a target', () => {
-  const { systemInstruction } = buildPrompt({ ...BASE, maxChars: 900 });
-  assert.match(systemInstruction, /900 characters is a hard upper bound/);
+test('buildPrompt: the length level sets the sentence range and the hard character cap', () => {
+  const { systemInstruction } = buildPrompt({ ...BASE, length: LEVELS[0] });
+  assert.match(systemInstruction, /Aim for about 1-2 sentences/);
+  assert.match(systemInstruction, /300 characters is a hard upper bound/);
+  assert.doesNotMatch(systemInstruction, /3-8 sentences/);
+
+  const detailed = buildPrompt({ ...BASE, length: LEVELS[3] }).systemInstruction;
+  assert.match(detailed, /Aim for about 6-12 sentences/);
+  assert.match(detailed, /2000 characters is a hard upper bound/);
 });
 
 test('buildPrompt: casts the model as a defending PhD candidate', () => {
