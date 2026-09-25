@@ -17,28 +17,8 @@ const settingsStore = require('./settings');
 const store = require('./store');
 const docs = require('./documents');
 const llm = require('./llm');
-const gemini = require('./gemini');
-const openaiCompat = require('./openaiCompat');
 const prompt = require('./prompt');
-const { PROVIDERS } = require('./config');
-
-// Resolve for the current Provider (the config.js registry): stream impl / Key / baseURL / model chain
-function resolveProvider(s) {
-  const id = s.provider && PROVIDERS[s.provider] ? s.provider : 'gemini';
-  const p = PROVIDERS[id];
-  const model = ((s[p.modelField] || '') + '').trim() || p.defaultModel;
-  const models = [model, ...(p.fallbacks || [])].filter((m, i, a) => a.indexOf(m) === i);
-  return {
-    id,
-    label: p.label,
-    type: p.type,
-    needsKey: !!p.keyField,
-    apiKey: p.keyField ? s[p.keyField] || '' : '',
-    baseURL: p.baseURLField ? s[p.baseURLField] || p.baseURL : p.baseURL,
-    models,
-    streamFn: p.type === 'gemini' ? gemini.generateAnswerStream : openaiCompat.generateAnswerStream,
-  };
-}
+const { resolveProvider } = require('./config');
 
 // Fix the app name so a dev run and the packaged .app share the same userData/settings.json
 app.setName('interview-copilot');
@@ -339,16 +319,18 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
   //   chain, and too small a budget leaves the answer empty, so this is
   //   generous and answer length is controlled by the prompt instead (the
   //   thinking chain is never shown to the user).
+  // - Anthropic: same reason — thinking is on by default on current Claude
+  //   models and counts against max_tokens.
   // - Gemini already has thinking disabled (thinkingBudget=0), so this can be
   //   tightened against the character cap as a length backstop.
   const maxChars = currentSettings.maxChars || 500;
   const lang = currentSettings.answerLanguage || 'auto';
   const perChar = lang === 'en' ? 0.5 : 1.1;
-  const maxOutputTokens =
-    prov.type === 'openai'
-      ? 4096
-      : Math.min(4096, Math.max(160, Math.ceil(maxChars * perChar * 1.15)));
-  const extractTokens = prov.type === 'openai' ? 1024 : 80;
+  const BUDGETS = { openai: [4096, 1024], anthropic: [8192, 2048] };
+  const [maxOutputTokens, extractTokens] = BUDGETS[prov.type] || [
+    Math.min(4096, Math.max(160, Math.ceil(maxChars * perChar * 1.15))),
+    80,
+  ];
 
   const common = {
     streamFn: prov.streamFn,

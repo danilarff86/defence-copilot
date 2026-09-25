@@ -102,4 +102,4 @@ async function generateAnswerStream({
   return full;
 }
 
-module.exports = { generateAnswerStream };
+module.exports = { generateAnswerStream, BASE };
