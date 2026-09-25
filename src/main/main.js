@@ -18,7 +18,8 @@ const store = require('./store');
 const docs = require('./documents');
 const llm = require('./llm');
 const prompt = require('./prompt');
-const { resolveProvider } = require('./config');
+const { resolveProvider, modelSetting } = require('./config');
+const models = require('./models');
 
 // Fix the app name so a dev run and the packaged .app share the same userData/settings.json
 app.setName('interview-copilot');
@@ -194,6 +195,17 @@ ipcMain.handle('get-settings', () => currentSettings);
 ipcMain.handle('save-settings', (_e, partial) => {
   currentSettings = settingsStore.save(partial || {});
   registerHotkey();
+  return currentSettings;
+});
+
+// Model picker: list the current provider's models / store the chosen one as that provider's model
+ipcMain.handle('list-models', (_e, opts) =>
+  models.listModels(currentSettings, { force: !!(opts && opts.force) }),
+);
+
+ipcMain.handle('select-model', (_e, model) => {
+  const partial = modelSetting(currentSettings, model);
+  if (partial) currentSettings = settingsStore.save(partial);
   return currentSettings;
 });
 
