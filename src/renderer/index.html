@@ -66,6 +66,13 @@
             <option value="hi">हिन्दी</option>
           </select>
         </label>
+        <label class="field">
+          <span>Model</span>
+          <select id="modelSelect" class="model-select" disabled>
+            <option>Loading…</option>
+          </select>
+        </label>
+        <button id="modelRefresh" class="btn icon-btn" title="Refresh model list">↻</button>
         <button id="toggleBtn" class="btn primary start-btn">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
             <path d="M8 5v14l11-7z" />
@@ -255,11 +262,12 @@
             <input type="password" id="setDeepgram" placeholder="dg_…" />
           </label>
           <label class="setting">
-            <span>Answer provider</span>
+            <span>Answer provider <em>(pick the model in the top bar)</em></span>
             <select id="setProvider">
               <option value="deepseek">DeepSeek</option>
               <option value="gemini">Gemini</option>
               <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
               <option value="ollama">Ollama (local)</option>
             </select>
           </label>
@@ -268,39 +276,25 @@
             <input type="password" id="setDeepseek" placeholder="sk-…" />
           </label>
           <label class="setting">
-            <span>DeepSeek model</span>
-            <input type="text" id="setDeepseekModel" placeholder="deepseek-chat" />
-          </label>
-          <label class="setting">
             <span>Gemini API Key</span>
             <input type="password" id="setGemini" placeholder="AI…" />
-          </label>
-          <label class="setting">
-            <span>Gemini model ID</span>
-            <input type="text" id="setModel" placeholder="gemini-2.5-flash" />
           </label>
           <label class="setting">
             <span>OpenAI API Key</span>
             <input type="password" id="setOpenai" placeholder="sk-…" />
           </label>
           <label class="setting">
-            <span>OpenAI model</span>
-            <input type="text" id="setOpenaiModel" placeholder="gpt-4o-mini" />
+            <span>Anthropic API Key</span>
+            <input type="password" id="setAnthropic" placeholder="sk-ant-…" />
           </label>
-          <div class="setting-row">
-            <label class="setting">
-              <span>Ollama base URL (local)</span>
-              <input
-                type="text"
-                id="setOllamaURL"
-                placeholder="http://localhost:11434/v1/chat/completions"
-              />
-            </label>
-            <label class="setting">
-              <span>Ollama model</span>
-              <input type="text" id="setOllamaModel" placeholder="llama3.1" />
-            </label>
-          </div>
+          <label class="setting">
+            <span>Ollama base URL (local)</span>
+            <input
+              type="text"
+              id="setOllamaURL"
+              placeholder="http://localhost:11434/v1/chat/completions"
+            />
+          </label>
           <div class="setting-row">
             <label class="setting">
               <span>Transcript language</span>

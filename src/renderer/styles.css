@@ -109,6 +109,14 @@ button {
   color: var(--muted);
   padding-left: 2px;
 }
+.model-select {
+  min-width: 190px;
+  max-width: 240px;
+}
+.setting em {
+  font-style: normal;
+  color: var(--muted);
+}
 select {
   appearance: none;
   -webkit-appearance: none;
