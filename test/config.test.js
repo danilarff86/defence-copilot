@@ -60,3 +60,23 @@ test('modelSetting: writes to the current provider’s own field', () => {
   });
   assert.equal(modelSetting({ provider: 'openai' }, '  '), null);
 });
+
+test('tokenBudgets: thinking providers get room for thinking; Gemini is capped by answer length', () => {
+  const { tokenBudgets } = require('../src/main/config');
+  // Claude thinking counts against max_tokens even for the one-line extraction call
+  assert.deepEqual(tokenBudgets('anthropic', { maxChars: 1200, answerLanguage: 'en' }), {
+    answer: 8192,
+    extract: 4096,
+  });
+  assert.deepEqual(tokenBudgets('openai', { maxChars: 1200, answerLanguage: 'en' }), {
+    answer: 4096,
+    extract: 1024,
+  });
+  // Gemini: thinking disabled, so the ceiling tracks the character cap
+  assert.deepEqual(tokenBudgets('gemini', { maxChars: 1200, answerLanguage: 'en' }), {
+    answer: Math.ceil(1200 * 0.5 * 1.15),
+    extract: 80,
+  });
+  assert.equal(tokenBudgets('gemini', { maxChars: 100, answerLanguage: 'zh' }).answer, 160);
+  assert.equal(tokenBudgets('gemini', { maxChars: 100000, answerLanguage: 'zh' }).answer, 4096);
+});

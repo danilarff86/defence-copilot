@@ -18,7 +18,7 @@ const store = require('./store');
 const docs = require('./documents');
 const llm = require('./llm');
 const prompt = require('./prompt');
-const { resolveProvider, modelSetting } = require('./config');
+const { resolveProvider, modelSetting, tokenBudgets } = require('./config');
 const models = require('./models');
 
 // Fix the app name so a dev run and the packaged .app share the same userData/settings.json
@@ -325,24 +325,10 @@ ipcMain.on('generate-answer', async (_e, { reqId, question, transcript }) => {
     jobDescription: currentSettings.jobDescription || '',
   });
 
-  // Output token ceiling.
-  // - OpenAI-compatible providers (including DeepSeek/Ollama) may be
-  //   "reasoning models": max_tokens must also cover the hidden thinking
-  //   chain, and too small a budget leaves the answer empty, so this is
-  //   generous and answer length is controlled by the prompt instead (the
-  //   thinking chain is never shown to the user).
-  // - Anthropic: same reason — thinking is on by default on current Claude
-  //   models and counts against max_tokens.
-  // - Gemini already has thinking disabled (thinkingBudget=0), so this can be
-  //   tightened against the character cap as a length backstop.
-  const maxChars = currentSettings.maxChars || 500;
-  const lang = currentSettings.answerLanguage || 'auto';
-  const perChar = lang === 'en' ? 0.5 : 1.1;
-  const BUDGETS = { openai: [4096, 1024], anthropic: [8192, 2048] };
-  const [maxOutputTokens, extractTokens] = BUDGETS[prov.type] || [
-    Math.min(4096, Math.max(160, Math.ceil(maxChars * perChar * 1.15))),
-    80,
-  ];
+  const { answer: maxOutputTokens, extract: extractTokens } = tokenBudgets(prov.type, {
+    maxChars: currentSettings.maxChars || 500,
+    answerLanguage: currentSettings.answerLanguage || 'auto',
+  });
 
   const common = {
     streamFn: prov.streamFn,

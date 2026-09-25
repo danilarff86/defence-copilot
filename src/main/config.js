@@ -103,4 +103,28 @@ function modelSetting(s, model) {
   return { [PROVIDERS[providerId(s)].modelField]: m };
 }
 
-module.exports = { PROVIDERS, resolveProvider, modelSetting };
+// Output token ceilings for the answer call and the question-extraction call.
+// - OpenAI-compatible providers (including DeepSeek/Ollama) may be
+//   "reasoning models": max_tokens must also cover the hidden thinking
+//   chain, and too small a budget leaves the answer empty, so this is
+//   generous and answer length is controlled by the prompt instead (the
+//   thinking chain is never shown to the user).
+// - Anthropic: same reason — thinking is on by default on current Claude
+//   models and counts against max_tokens, the one-line extraction included.
+// - Gemini already has thinking disabled (thinkingBudget=0), so this can be
+//   tightened against the character cap as a length backstop.
+const BUDGETS = {
+  openai: { answer: 4096, extract: 1024 },
+  anthropic: { answer: 8192, extract: 4096 },
+};
+
+function tokenBudgets(type, { maxChars, answerLanguage }) {
+  if (BUDGETS[type]) return { ...BUDGETS[type] };
+  const perChar = answerLanguage === 'en' ? 0.5 : 1.1;
+  return {
+    answer: Math.min(4096, Math.max(160, Math.ceil(maxChars * perChar * 1.15))),
+    extract: 80,
+  };
+}
+
+module.exports = { PROVIDERS, resolveProvider, modelSetting, tokenBudgets };
