@@ -3,7 +3,8 @@
 // Cross-Provider common layer: error type + retry/fallback logic.
 // The concrete streaming implementation is provided by each provider's generateAnswerStream (gemini.js / openaiCompat.js).
 
-const TRANSIENT = new Set([429, 500, 502, 503, 504]);
+// 529 = Anthropic "overloaded"
+const TRANSIENT = new Set([429, 500, 502, 503, 504, 529]);
 
 class GenError extends Error {
   constructor(status, message) {

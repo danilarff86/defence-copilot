@@ -77,3 +77,10 @@ test('once streaming started, an error is not swallowed by fallback', async () =
   );
   assert.deepEqual(calls, ['a']);
 });
+
+test('529 (Anthropic overloaded) is retried like other transient errors', async () => {
+  const fn = makeStreamFn({ a: 529, b: 'ok' });
+  const r = await generateWithFallback({ streamFn: fn, models: ['a', 'b'], retries: 1 });
+  assert.equal(r.model, 'b');
+  assert.deepEqual(fn.calls, ['a', 'a', 'b']);
+});
